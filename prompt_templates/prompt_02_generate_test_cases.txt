@@ -1,0 +1,54 @@
+# ROLE
+Bạn là Senior QA Engineer với 10 năm kinh nghiệm, đang kiểm thử role Vendor của PARSCA — Marketplace phụ tùng (Marine, Auto, Door, Tools).
+
+# TASK
+Phân tích requirement và tạo bộ test case đầy đủ theo phương pháp Risk-Based Testing (RBT) cho module PARSCA Vendor được chỉ định.
+Nạp trước: .agent/skills/generate-testcase/SKILL.md (+ resources/module_catalog.md), .agent/rules/core.md, .agent/rules/test-data.md.
+
+# CONTEXT
+- Requirement: [Chọn 1:
+  - Doc BA: docs/parsca-vendor-test-docs/09-them-sua-san-pham.md (+ read_with: 05, 06, 11, 20)
+  - Requirements đã chuẩn hoá: practices/requirements/parsca-vendor/03_requirements_product_management.md
+  - Jira: practices/requirements/jira/PVEN-<n>
+  - Hoặc DÁN user story / AC vào đây]
+- System type: Web (FE SPA /vendor) + API (REST)
+- Module: [Mã + tên theo catalog. Ví dụ: PFORM — Thêm / sửa sản phẩm (M8, Risk 🔴 High)]
+- URL: {FE_URL}/vendor/products/new, {FE_URL}/vendor/products/:id/edit — API {API_URL} (prefix theo API_PREFIX)
+- Tài khoản: ${VENDOR1_EMAIL} (V1 chính), ${VENDOR2_EMAIL} (V2 đối chứng), ${ADMIN_EMAIL}, ${USER_EMAIL}, ${ROLE_TEST_EMAIL}
+- Mode: [QUICK (mặc định) / FULL — có CHECKPOINT sau bước phân tích]
+
+# CONSTRAINTS
+1. Phân tích requirement, xác định các luồng:
+   - Happy Path (vd: tạo sản phẩm tối thiểu → toast "Saved" → về /vendor/products)
+   - Alternate Path (vd: đổi department → subcategory bị xoá, brand về mặc định)
+   - Exception Path (vd: 409 SKU trùng, hết phiên khi bấm lưu, ảnh > 10 MB)
+2. Phát hiện Ambiguities (AMB-xx) và đặt câu hỏi PO theo format Q-Vx; liên kết Q đang mở (Q-V2, Q-V4, Q-V5, Q-V6, Q-V8, Q-V9).
+3. Đánh giá Risk Level theo catalog PARSCA:
+   - 🔴 High (ROLE, LOGIN, SESS, SCOPE, PSTAT, PFORM, CSV, WEB, API): 8-15+ TCs, Priority Critical
+   - 🟡 Medium (PLIST, IMG, ORDD, PAY, PROF): 4-8 TCs, Priority High
+   - 🟢 Low (PDTL, DASH, ORD, REV, SET): 2-4 TCs, Priority Medium / Low
+4. Áp dụng kỹ thuật thiết kế test case:
+   - Equivalence Partitioning (chủ sở hữu V1 / V2 / Admin; status active / draft / archived / lạ; department marine / auto / door / tools / lạ)
+   - Boundary Value Analysis (stockCount 0/1; ảnh 0/1/5/6; ảnh 10.000.000 B / 10.485.760 B / 11.534.336 B; price 4/5 chữ số thập phân; rating 5 / 5.1)
+   - Decision Table (ma trận 4 vai × endpoint; guard 4 vai × /vendor, /admin, /profile, /orders)
+   - State Transition (Active ↔ Draft ↔ Archived → Xoá; hiển thị trên storefront)
+   - Error Guessing (SKU chữ thường / có dấu cách; `<script>` trong tiêu đề; trường lạ createdBy → 400; double submit)
+5. Bắt buộc phủ mọi điểm GHI CHÚ CHO TESTER của doc (≥ 1 TC mỗi điểm). Điểm THEO CODE HIỆN TẠI → TC ghi "⚠️ THEO CODE HIỆN TẠI → ghi Q-Vx, không PASS" + tag @CodeHienTai. Màn [GIẢ LẬP] → tag @GiaLap, KHÔNG viết Expected "dữ liệu được lưu".
+6. Luôn kiểm business rules liên quan: BR-02 (sản phẩm người khác → 404 "Product not found", KHÔNG phải 403), BR-05 (trường lạ → 400), BR-06 (SKU/slug unique toàn hệ thống, BE đổi SKU thành CHỮ HOA), BR-07 (Active hiện ngay trên website), BR-09 (ảnh jpeg/png/webp/gif ≤ 10 MB, 1–5 ảnh).
+7. Bao phủ: Happy path, Negative, Boundary, Edge, Security/Permission/Data scope, Double submit, Session (access_token 15 phút, refresh), Rate limit (5 lần/phút/IP → 429), Keyboard A11y, UTF-8/Emoji.
+8. Test Data phải CỤ THỂ theo .agent/rules/test-data.md:
+   - Đúng: "Nhập SKU: AUTO-PFORM12-20261020", "Name: Auto Pform TC12 20261020", "Price: 0.00001"
+   - Sai: "Nhập SKU hợp lệ"
+   - Credentials chỉ ghi tên biến: ${VENDOR1_EMAIL}, ${ROLE_TEST_NEW_PASSWORD}
+9. Expected Result cụ thể: status code + thông báo nguyên văn + số lượng (vd: 409 `Product with SKU "AUTO-PFORM12-20261020" already exists`). Không viết "hiển thị đúng".
+10. AI Self-Quality Gate: TC ID unique 100%, Step N ↔ Expected N, test data cụ thể, mỗi field có Positive / Negative / Boundary / Edge, đủ 3 cột automation.
+
+# OUTPUT FORMAT
+- File: practices/testcases/vendor/TC_PARSCA_VENDOR_[NN]_[MODULE].md (nối tiếp file đã có, vd TC_PARSCA_VENDOR_04_PRODUCT_FORM_IMAGE.md)
+- Bảng 12 cột (khớp scripts/convert_excel/md_to_xlsx.js):
+  | TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data | Automatable | Auto Type | Tags |
+- Steps / Expected đánh số, xuống dòng bằng <br>; KHÔNG dùng ký tự | trong ô.
+- Quy tắc TC ID: PARSCA_<MOD>_TC_<NNN> (vd: PARSCA_PFORM_TC_013). TC API: API_<GROUP>_TC_<NNN>.
+- Module ghi dạng "M8: PFORM"; Auto Type: UI / API / Hybrid; Tags trong: @Smoke @Regression @CriticalPath @Security @DataScope @Boundary @CodeHienTai @SuyLuan @GiaLap @NeedDevSupport.
+- Mode FULL: header → Risk summary → Traceability (AC → TC) → Bảng TC → Ambiguities / Q-Vx → Thống kê.
+- Xuất Excel: node scripts/convert_excel/md_to_xlsx.js practices/testcases/vendor/<file>.md

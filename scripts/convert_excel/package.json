@@ -1,0 +1,18 @@
+{
+  "name": "parsca-vendor-convert-excel",
+  "version": "1.0.0",
+  "description": "Convert PARSCA Vendor Markdown test cases (manual 12 cột / API 6 cột) sang Excel",
+  "private": true,
+  "main": "md_to_xlsx.js",
+  "scripts": {
+    "convert": "node md_to_xlsx.js",
+    "convert:vendor": "node md_to_xlsx.js ../../practices/testcases/vendor --summary",
+    "convert:api": "node md_to_xlsx.js ../../practices/testcases/api/API_TC_PARSCA_VENDOR.md"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

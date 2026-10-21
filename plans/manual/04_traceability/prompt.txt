@@ -1,0 +1,70 @@
+# ============================================================
+# BƯỚC 4: ĐẢM BẢO ĐỘ BAO PHỦ (Traceability & Gap Analysis) — PARSCA Vendor
+# ============================================================
+# Đây là prompt độc lập — copy & paste vào bất kỳ AI nào
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI đã review kết quả phân rã ở Bước 3
+# 2. Review danh sách scenarios AI sinh ra
+# 3. Chốt risk từng module + bổ sung scenarios nếu thiếu
+# 4. Xác nhận hoàn tất → sang Bước 5
+# ============================================================
+
+---START---
+
+Từ kết quả phân rã Module ở Bước 3, hãy xây dựng **Ma trận Truy xuất Yêu cầu (Traceability Matrix)** cho PARSCA Vendor để đảm bảo độ bao phủ toàn diện.
+
+## Nhiệm vụ:
+
+### 1. Traceability Mapping
+
+Map từng rule / yêu cầu trong doc với **mã Yêu cầu định danh**:
+- Format: `REQ-<MOD>-NN` (VD: `REQ-SCOPE-01`, `REQ-CSV-07`)
+- Mỗi REQ phải trỏ về **doc + mục** (VD: `06 §Quy tắc`, `12 §Ghi chú cho tester`)
+- Ghi nhãn doc nếu có: THEO CODE HIỆN TẠI (+ mã Q-Vx) / [SUY LUẬN] / [GIẢ LẬP]
+
+Trình bày dạng bảng:
+| REQ ID | Module | Doc / Mục | Mô tả Yêu cầu | Nhãn doc | Q-Vx |
+|--------|--------|-----------|----------------|----------|------|
+
+### 2. Gap Analysis (Kiểm tra thiếu sót)
+
+Cross-check với doc gốc, báo cáo cụ thể:
+- Gạch đầu dòng nào trong mục **"Ghi chú cho tester"** chưa có REQ
+- Thông báo lỗi (chuỗi chính xác) nào chưa được map
+- Endpoint nào trong front-matter `endpoints:` của doc chưa có REQ
+- Vai nào (anonymous / user / vendor / admin) chưa được kiểm cho endpoint 🔴
+- Điểm lệch FE ↔ BE (`/v1`, `{data, meta}` — Doc 01) ảnh hưởng REQ nào
+
+### 3. High-Level Test Scenarios
+
+Liệt kê kịch bản **High-Level** cho từng Module, mỗi kịch bản **1 câu** mô tả cốt lõi, tập trung vào:
+
+[Gợi ý trọng tâm PARSCA:
+- **Security / Phân quyền:** ma trận 4 vai; V1 thao tác sản phẩm V2 / Admin → 404; API quản trị → 403; trường lạ → 400; hạ role → mất quyền ngay
+- **UI Validation:** từng trường form sản phẩm (Name, SKU, Price, Stock count, Rating, ảnh 1–5…) với chuỗi lỗi chính xác
+- **Business Logic:** vendor tự xuất bản; Import CSV luôn Active; SKU tự HOA; brand mặc định theo department; In stock tính lại theo stockCount
+- **Data Integrity:** SKU / slug unique toàn hệ thống; import lại không nhân đôi; xoá dọn ảnh nhưng giữ ảnh dùng chung; `createdBy` đúng người tạo
+- **Đồng bộ website:** Active hiện ngay; Draft / Archived / Xoá → 404; category-counts cập nhật
+- **Error Handling:** 401 giữa chừng (upload không gửi lại), 429 login, BE 5xx "không khả dụng", "Failed to load products.", mất mạng khi import
+- **Màn giả lập:** chỉ hiển thị dữ liệu mẫu + không gọi API cấm (VD: không gọi `/dashboard/stats`)]
+
+Trình bày dạng:
+| REQ ID | Module | Scenario ID | Mô tả Scenario | Risk đề xuất | Tag dự kiến |
+|--------|--------|-------------|-----------------|--------------|-------------|
+
+- Scenario ID: `SC-<MOD>-NN`
+- Risk đề xuất mặc định: 🔴 ROLE, LOGIN, SESS, SCOPE, PSTAT, PFORM, CSV, WEB, API · 🟡 PLIST, IMG, ORDD, PAY, PROF · 🟢 PDTL, DASH, ORD, REV, SET
+- Tag dự kiến: `@Smoke`, `@Regression`, `@Security`, `@DataScope`, `@Boundary`, `@CodeHienTai`, `@SuyLuan`, `@GiaLap`, `@NeedDevSupport`
+
+### 4. Thống kê coverage
+
+| Module | Số REQ | Số Scenario | REQ chưa có Scenario | Scenario chờ PO |
+|--------|--------|-------------|----------------------|-----------------|
+
+---
+
+⏸️ **SAU KHI HOÀN THÀNH**, hãy dừng lại để tôi review danh sách scenarios và chốt risk.
+Tôi sẽ bổ sung hoặc xác nhận để sang Bước 5 sinh Test Case chi tiết.
+
+> ⚠️ **Đây là điểm chốt chặn nhân sự (Human Checkpoint).** Tester tự đánh giá rủi ro cho từng Module trước khi cho AI sinh kịch bản chi tiết.

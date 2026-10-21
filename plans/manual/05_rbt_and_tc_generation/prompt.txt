@@ -1,0 +1,192 @@
+# ============================================================
+# BƯỚC 5: SINH TEST CASE CHI TIẾT (RBT & TC Generation) — PARSCA Vendor
+# ============================================================
+# Đây là prompt độc lập — copy & paste vào bất kỳ AI nào
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI đã review và chốt scenarios + risk ở Bước 4
+# 2. Sửa dòng [Module sinh lần này] — tối đa 2 module / lần
+# 3. Review test cases → lặp cho module tiếp theo → sang Bước 6
+# ============================================================
+
+---START---
+
+Áp dụng chiến lược **Risk-Based Testing (RBT)**, hãy sinh danh sách Test Case chi tiết từ các High-Level Scenarios đã chốt ở Bước 4.
+
+**Module sinh lần này:** [VD: SCOPE, CSV]
+
+## Yêu cầu cho mỗi Test Case:
+
+### 1. Đánh giá rủi ro (Risk Assessment)
+
+Dùng risk đã chốt ở Bước 4 (mặc định):
+- **High 🔴:** ROLE, LOGIN, SESS, SCOPE, PSTAT, PFORM, CSV, WEB, API → 8–15+ TC/module, đủ Happy + Negative + Boundary + Edge + Security
+- **Medium 🟡:** PLIST, IMG, ORDD, PAY, PROF → 4–8 TC/module
+- **Low 🟢:** PDTL, DASH, ORD, REV, SET → 2–4 TC/module, happy path + kiểm hiển thị
+
+### 2. Cấu trúc Test Case
+
+| Field | Yêu cầu |
+|-------|---------|
+| **Module / Sub-module** | Mã module chuẩn (VD: `CSV / Dry run`) |
+| **Test Case Title** | Ngắn gọn, rõ mục đích (VD: "V1 import dòng có SKU của V2 bị loại") |
+| **Pre-conditions** | Tài khoản (biến), dữ liệu đối chứng, trạng thái sản phẩm, file cần có |
+| **Test Steps** | Đánh số; ghi route (`/vendor/products`) hoặc endpoint (`POST /products/import?dryRun=true`) |
+| **Expected Results** | Đánh số 1-1 với steps; chuỗi thông báo **chính xác** từ doc; HTTP status với API |
+| **Test Data** | Cụ thể (xem mục 3) |
+| **Priority** | High / Medium / Low |
+| **Risk Level** | High / Medium / Low |
+| **Tag** | `@Smoke`, `@Regression`, `@Security`, `@DataScope`, `@Boundary`, `@CodeHienTai`, `@SuyLuan`, `@GiaLap`, `@NeedDevSupport` |
+| **Ref** | `REQ-<MOD>-NN`, doc + mục, Q-Vx (nếu có) |
+
+### 3. Quy tắc Test Data (theo `.agent/rules/test-data.md`)
+
+Test Data **PHẢI CỤ THỂ**, không mô tả chung chung, không chứa credentials thật:
+
+```
+❌ SAI: "Đăng nhập bằng vendor"
+✅ ĐÚNG: "Đăng nhập ${VENDOR1_EMAIL} / ${VENDOR1_PASSWORD}"
+
+❌ SAI: "Nhập SKU hợp lệ"
+✅ ĐÚNG: "SKU: auto-pform12-20261020 (chữ thường) → BE lưu AUTO-PFORM12-20261020"
+
+❌ SAI: "Nhập SKU trùng của vendor khác"
+✅ ĐÚNG: "SKU: {{V2_PRODUCT_SKU}} (SKU của V2, ghi ở pre-flight)"
+
+❌ SAI: "Upload ảnh quá dung lượng"
+✅ ĐÚNG: "File: img_11mb.png (11.534.336 B)"
+
+❌ SAI: "Nhập stock không hợp lệ"
+✅ ĐÚNG: "Stock count: 0 → 'Stock count must be at least 1'; 1.5 → 'Stock count must be a whole number'"
+
+❌ SAI: "Email liên hệ"
+✅ ĐÚNG: "Email: auto.pay.tc004.1792480000@auto.test"
+```
+
+### 4. Phạm vi bao phủ
+
+- **Happy Path:** luồng chính
+- **Negative Path:** sai, thiếu, sai định dạng
+- **Boundary Values:** min, max, min-1, max+1
+- **Edge Cases:** 401 giữa chừng, mất mạng, double submit, nhiều tab
+
+[Gợi ý bổ sung PARSCA:
+- **Phân quyền (Decision Table):** 4 vai (anonymous / user / vendor / admin) × endpoint; V1 vs V2 vs Admin cho mọi thao tác trên sản phẩm (xem / sửa / xoá / đổi trạng thái / import) → 404 "Product not found"
+- **Thay đổi role trực tiếp:** dùng `${ROLE_TEST_EMAIL}`, KHÔNG dùng V1 (tránh đăng xuất suite khác)
+- **Đồng bộ website:** sau mỗi thay đổi trạng thái / xoá → kiểm `GET /products` công khai + trang storefront
+- **Màn giả lập:** chỉ kiểm dữ liệu mẫu (VD Orders: 20 đơn ORD-2134 → ORD-2153; Reviews: 13 đánh giá) + tab Network không có request API cấm
+- **Rò rỉ thông tin (Q-V4):** 409 SKU trùng, lỗi slug lộ SKU sản phẩm khác → `@CodeHienTai`]
+
+### 5. Validation chuyên biệt từng trường (Field-Level Validation)
+
+**BẮT BUỘC:** Liệt kê tất cả field của form trong scope, sinh TC **riêng cho TỪNG trường**, KHÔNG gộp.
+
+**Field PARSCA đã biết (đối chiếu lại doc trước khi sinh):**
+
+| Form | Field | Đặc tính (theo doc) | Thông báo lỗi |
+|------|-------|---------------------|---------------|
+| PFORM (09) | Name | Bắt buộc, trim, ≥ 1 ký tự | "Name required" |
+| PFORM | SKU | Bắt buộc, không cho gõ dấu cách, BE đổi HOA, unique toàn hệ thống | "SKU required", 409 `Product with SKU "..." already exists` |
+| PFORM | Price | Bắt buộc, số + 1 dấu chấm, ≤ 4 thập phân, mặc định 0 (hợp lệ) | "Price required", "Price must be 0 or greater" |
+| PFORM | Compare at | Tuỳ chọn, ≥ 0, không so với Price | – (Q-V15) |
+| PFORM | Brand | Chọn từ `/product-brands`; mặc định theo department (marine "Parsca Marine", auto/door "Parsca", tools "Vevor") | – |
+| PFORM | Department | Bắt buộc: marine / auto / door / tools; đổi → xoá subcategory | "Department required" |
+| PFORM | Subcategory | Bắt buộc, phụ thuộc department (BE không kiểm tra thuộc) | "Subcategory required" |
+| PFORM | Gallery | 1–5 ảnh; jpeg/png/webp/gif ≤ 10 MB | "At least one image is required", "Maximum 5 images", "A product can have at most 5 images" |
+| PFORM | Status | Active (mặc định) / Draft / Archived | – |
+| PFORM | Rating | 0–5, bước 0,1, tuỳ chọn | – (Q-V11) |
+| PFORM | Stock count | Bắt buộc, nguyên ≥ 1, mặc định 0 | "Stock count required", "...must be a whole number", "...must be at least 1" |
+| PFORM | Alternate part numbers | Enter/nút thêm, trim, không trùng | "Part number already exists" |
+| PFORM | Compatible model | Chỉ marine/auto; Year start/end nguyên ≥ 0, không so sánh | – (Q-V15) |
+| IMG (11) | File upload | jpeg/png/webp/gif, ≤ 10 MB | "Image file is required", "Only image uploads are allowed" |
+| CSV (12) | File | .csv, ≤ 20 MB, ≤ 50.000 dòng, có dòng dữ liệu, đủ cột `sku,name,price,stockCount` | "Only .csv files are accepted", "The file has N rows; the limit is 50000 per import. Please split it.", "The file has no data rows.", "Missing required column(s): ..." |
+| CSV | Dòng dữ liệu | SKU trùng trong file; SKU người khác; stockCount ≥ 1 | "sku: duplicated in this file (already used on line N)", "sku: this product belongs to another vendor" |
+| PROF (19) | Avatar | jpeg/png/webp/gif ≤ 10 MB, upload ngay | "That image is X.X MB — the limit is 10 MB.", "Profile picture updated." |
+| PAY (17) `@GiaLap` | Address step | Contact email (kiểm lỏng), Phone (nhận chữ), First/Last name, Country, Address, City, Postal code bắt buộc | "Contact email is required", "Enter a valid email address", "... is required" |
+| PAY `@GiaLap` | Payment Method step | Name on account, Bank name, Account number (nhận chữ), Date of birth (không tương lai), Country of birth, Bank country, Terms | "Select the account holder", "Date of birth cannot be in the future", "You must accept the terms to continue" |
+| LOGIN (03) | Email / Password | Password ≥ 8; 5 lần/phút → 429 | Theo doc 03 |
+
+Áp dụng checklist validation theo loại field:
+
+| Loại Field | Validation cần test |
+|---|---|
+| **Text (Name, Brand, Address...)** | Required · Min/Max length · Whitespace-only · Leading/trailing spaces (trim) · Ký tự đặc biệt (`<>&"'`) · XSS (`<script>alert(1)</script>`) · SQL injection (`' OR 1=1--`) · Unicode/Emoji |
+| **SKU / Code** | Required · Dấu cách · Chữ thường → HOA · Trùng (của mình / V2 / Admin) · Ký tự đặc biệt · Max length |
+| **Email** | Format · Thiếu `@` · Thiếu domain · `a@b.c` (kiểm lỏng ở Payouts) · Max length |
+| **Phone** | Chỉ số · Chữ cái (Payouts nhận cả chữ — ghi nhận) · Dấu `-`, `.`, khoảng trắng |
+| **Date** | Ngày tương lai (Date of birth) · Ngày không tồn tại · Năm nhuận |
+| **Number / Currency (Price, Compare at, Stock, Rating, Year)** | Min/Max · Số âm · 0 · Thập phân (≤ 4 chữ số / không cho phép) · Ký tự không phải số · `1.2.3` · Leading zeros · Overflow |
+| **Dropdown (Department, Subcategory, Brand, Status, Condition, Availability)** | Mặc định · Tất cả option · Phụ thuộc (đổi department) · Required chưa chọn |
+| **Checkbox (New, In stock, Terms, Same as contact address)** | Mặc định · Check/Uncheck · Bị bỏ qua (In stock tính lại) · Required |
+| **File Upload (ảnh, avatar, CSV)** | Loại hợp lệ/không (svg, heic, pdf, text đổi đuôi) · Biên 10 MB (10.000.000 B / 10.485.760 B / 11.534.336 B) · File rỗng · Nhiều file vượt chỗ trống · Chọn lại cùng file · Huỷ hộp chọn |
+| **Tag Input (Alternate part numbers)** | Trùng · Trim · Xoá từng cái · Enter không submit form |
+| **Textarea (Mô tả)** | Max length · Xuống dòng · HTML tags |
+
+### 5b. Scenarios Chuyên Sâu & Non-Functional Checklist
+
+1. **Double Submit & Concurrent Edit:** bấm "Add Product" 2 lần; 5 request cùng SKU (race → chỉ 1 thành công); 2 tab cùng sửa 1 sản phẩm.
+2. **Session & Network Resilience:** token hết hạn khi đang ở form / đang upload (upload 401 không tự gửi lại); refresh token dùng lại → "Invalid session"; mất mạng khi import → khung "Connection lost before the server answered…".
+3. **Localization & UTF-8 / Emoji:** tên sản phẩm tiếng Việt có dấu, emoji (`😀🚀`), ký tự đa ngôn ngữ; slug sinh ra hợp lệ.
+4. **Keyboard Accessibility (A11y):** Tab order form sản phẩm, Enter trong Alternate part numbers không submit, Esc đóng hộp thoại "Delete product?".
+5. **HTTP Status Codes (API TCs):** `200`, `201`, `204` (DELETE), `400` (trường lạ), `401`, `403` (API quản trị), `404` (sản phẩm người khác), `409` (SKU/slug trùng), `429` (login), `5xx`.
+
+**Ví dụ Field-Level Validation — trường "Stock count" (PFORM):**
+```
+Đặc tính: bắt buộc, số nguyên, ≥ 1, mặc định 0
+
+- TC: Để mặc định 0 → "Stock count must be at least 1", không lưu
+- TC: Xoá trống → "Stock count required"
+- TC: Nhập 1 → Hợp lệ (biên dưới)
+- TC: Nhập 1.5 → "Stock count must be a whole number"
+- TC: Nhập -1 → Báo lỗi
+- TC: Nhập 999 + bỏ tick "In stock" → Lưu thành công, sản phẩm vẫn "In stock" (BE tính lại)
+```
+
+> Xác định đặc tính từng field (type, required, min/max, format, unique, thông báo lỗi) từ doc trước khi sinh TC. Field nào doc không ghi giới hạn → ghi `@SuyLuan` và đưa vào Q-NEW.
+
+### 6. Kỹ thuật thiết kế Test Case (Test Design Techniques)
+
+**a) Equivalence Partitioning**
+```
+Chủ sở hữu sản phẩm khi V1 thao tác:
+- Lớp "của mình" (V1)   → cho phép
+- Lớp "vendor khác" (V2) → 404 "Product not found"
+- Lớp "admin tạo"        → 404 "Product not found"
+```
+
+**b) Boundary Value Analysis**
+```
+Số ảnh Gallery (1–5):
+- 0 ảnh → "At least one image is required"
+- 1 ảnh → Hợp lệ
+- 5 ảnh → Hợp lệ, bộ đếm "5/5 images"
+- chọn thêm khi đã 5 → "A product can have at most 5 images"
+
+CSV số dòng (≤ 50.000): 50.000 → nhận; 50.001 → "The file has 50001 rows; the limit is 50000 per import. Please split it."
+```
+
+**c) Decision Table**
+```
+GET /products/admin/:id (sản phẩm của V2):
+| Vai          | Kết quả |
+|--------------|---------|
+| anonymous    | 401     |
+| user         | 403     |
+| vendor V1    | 404     |
+| vendor V2    | 200     |
+| admin        | 200     |
+```
+
+**d) State Transition**
+```
+Sản phẩm: Active ↔ Draft ↔ Archived ; mọi trạng thái → Xoá (204)
+Website: Active → hiện ngay; Draft / Archived / Xoá → 404 trên storefront
+Test: mọi transition + kiểm website sau mỗi transition; Import CSV luôn → Active (cột status bị bỏ qua)
+```
+
+> Chọn kỹ thuật phù hợp cho từng Module/Field dựa trên đặc tính dữ liệu và logic nghiệp vụ.
+
+---
+
+> 💡 **Lưu ý:** Sinh **tối đa 2 module mỗi lần**. Ví dụ: "Hãy sinh TC cho SCOPE và CSV trước tiên. Tôi sẽ yêu cầu tiếp cho các module còn lại."
+> Không ghi bug "không lưu / không gọi API" cho màn `@GiaLap`.

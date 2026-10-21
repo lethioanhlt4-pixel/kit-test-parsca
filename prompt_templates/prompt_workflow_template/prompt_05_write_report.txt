@@ -1,0 +1,20 @@
+/write-report
+
+# CONTEXT
+- Dự án: PARSCA Vendor Testing
+- Phạm vi đợt kiểm thử: [Release vX.X / Sprint XX / Smoke Test / Regression Full]
+- Môi trường test: [Staging / Test / Dev]
+
+# NGUỒN DỮ LIỆU KẾT QUẢ TEST
+[Cung cấp 1 hoặc nhiều nguồn dữ liệu sau:]
+1. Đường dẫn file JUnit: test-results/junit.xml
+2. File kết quả Playwright JSON: test-results/results.json
+3. Danh sách test case manual: practices/testcases/vendor/
+4. Danh sách Bug phát hiện trong đợt test
+
+# YÊU CẦU ĐẦU RA
+Agent tổng hợp báo cáo và lưu tại `reports/TEST_REPORT_[PHẠM_VI]_[YYYYMMDD].md`:
+- Đưa ra quyết định phát hành: Go / Conditional Go / No-Go
+- Thống kê tỷ lệ PASS thực tế (tách biệt rõ trạng thái OBSERVED của @CodeHienTai)
+- Bảng tổng hợp chi tiết theo từng module và risk level (High / Medium / Low)
+- Danh sách Bug và các câu hỏi PO đang mở (Q-Vx)

@@ -1,0 +1,10 @@
+# Credentials & local config — KHÔNG commit
+.env
+service-account.json
+**/integrations/jira/.xray_token_cache.json
+
+# Dependencies (cài lại bằng npm install)
+node_modules/
+
+# File tạm của Excel khi đang mở
+~$*.xlsx

@@ -1,0 +1,26 @@
+/review-script
+
+# CONTEXT
+- Framework: Playwright Test (TypeScript) trong playwright-parsca/
+- Rules áp dụng: .agent/rules/selectors.md, .agent/rules/test-data.md, .agent/rules/core.md
+
+# MÃ NGUỒN CẦN REVIEW
+- File spec: [Đường dẫn file test spec, ví dụ: playwright-parsca/tests/vendor/csv.import.spec.ts]
+- File TC gốc (nếu có): [Đường dẫn file test case, ví dụ: practices/testcases/vendor/TC_PARSCA_VENDOR_05_IMPORT_CSV.md]
+- Mức độ review: [quick (chỉ Blocker/Major) / full (mặc định)]
+
+# CHECKLIST ĐÁNH GIÁ (A-E)
+Agent sẽ rà soát tự động theo 5 nhóm:
+- A. Selector: Priority chuẩn, không class hash/utility CSS, locator nằm trong Page Class, scoping chuẩn.
+- B. Wait Strategy: Không dùng sleep cứng/waitForTimeout, dùng auto-waiting, không race condition.
+- C. TC Mapping & Assertions: Map đúng TC ID, assertion nguyên văn từ doc BA, xử lý đúng @CodeHienTai và @GiaLap.
+- D. Test Data: Unique qua dataFactory.ts (AUTO-), setup via API, teardown sạch, test độc lập.
+- E. Bảo Mật: Không lộ credentials, không log token, clean code.
+
+# OUTPUT FORMAT
+Báo cáo Review Script theo chuẩn:
+- Kết luận: [Approve / Approve with changes / Request changes]
+- Thống kê lỗi: Blocker, Major, Minor
+- Bảng chi tiết lỗi phát hiện và giải pháp sửa
+- Bảng mapping TC ID ↔ Test methods
+- Đoạn mã đề xuất refactor (Diff)

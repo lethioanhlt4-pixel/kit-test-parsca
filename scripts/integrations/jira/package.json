@@ -1,0 +1,23 @@
+{
+  "name": "parsca-vendor-jira-integration",
+  "version": "1.0.0",
+  "description": "Jira & Xray integration scripts for kit-test-parsca (PARSCA Vendor)",
+  "private": true,
+  "scripts": {
+    "fetch": "node jira_fetcher.js",
+    "fetch:issue": "node jira_fetcher.js --format md --issue",
+    "fetch:epic": "node jira_fetcher.js --format md --epic",
+    "fetch:project": "node jira_fetcher.js --project",
+    "xray:auth": "node xray_auth.js",
+    "xray:verify": "node xray_auth.js --verify",
+    "xray:import": "node xray_importer.js",
+    "test:connection": "node jira_fetcher.js --help"
+  },
+  "dependencies": {
+    "axios": "1.14.0",
+    "dotenv": "16.4.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

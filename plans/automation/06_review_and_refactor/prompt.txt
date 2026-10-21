@@ -1,0 +1,84 @@
+# ============================================================
+# BƯỚC 6: KIỂM DUYỆT & TỐI ƯU (Review & Refactoring) — PARSCA Vendor
+# ============================================================
+# Workflow: /review-script (hoặc tiếp tục /gen-script)
+# Skill:    generate-playwright-script
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI spec đã PASS 2 lần ở Bước 5
+# 2. AI review + cleanup code
+# 3. Nhận code final → merge vào repository
+# ============================================================
+
+---START---
+
+/review-script
+
+Spec PARSCA đã **PASS 2 lần liên tiếp** (headed) và headless. Trước khi merge, hãy review và tối ưu code.
+
+**Phạm vi review:** [VD: tests/vendor/csv.import.spec.ts, pages/vendor/ImportCsvDialog.ts so với practices/testcases/vendor/TC_PARSCA_VENDOR_05_IMPORT_CSV.md]
+
+## Nhiệm vụ Refactoring:
+
+### 1. Xóa debug artifacts
+
+- Xoá toàn bộ `console.log`, `page.pause()`, `test.only`
+- Xoá code bị comment không còn dùng
+- Xoá locator / biến / import khai báo mà không sử dụng
+
+### 2. Selector & POM
+
+- [ ] Không có `page.locator(...)` / `getBy...` inline trong spec
+- [ ] Priority đúng `.agent/rules/selectors.md` (Role > Label > Placeholder > TestId > Text > id/name > CSS > XPath có lý do)
+- [ ] Không selector phụ thuộc class CSS sinh động, `nth()` không lý do, text dễ đổi
+- [ ] Locator dialog được scope trong dialog; row bảng lọc theo SKU
+
+### 3. Mapping TC & Assertions
+
+- [ ] Mỗi test có TC ID ở đầu title, khớp file TC; tag khớp cột Tags
+- [ ] Mọi `expect` có message; đủ status code + thông báo nguyên văn theo Expected Result
+- [ ] `@CodeHienTai` → `test.fixme` + annotation Q-Vx khi PO chưa trả lời (không PASS giả)
+- [ ] `@GiaLap` → chỉ assert hiển thị + không có request cấm
+
+### 4. Test stability & Data
+
+- [ ] Không `waitForTimeout`; `waitForResponse` đăng ký trước hành động
+- [ ] Data qua `dataFactory` (`AUTO-<MOD>-<ts>`), không hardcode SKU / email
+- [ ] Teardown xoá sản phẩm `AUTO-*` đã tạo; test đổi role khôi phục role
+- [ ] Test độc lập, chạy `--workers` > 1 không conflict
+
+### 5. Bảo mật
+
+- [ ] Không credentials / token / cookie trong code, log, annotation, report
+- [ ] `.env`, `.auth/`, `test-results/`, `playwright-report/`, `test-data/generated/` nằm trong `.gitignore`
+
+### 6. CI/CD Readiness
+
+```typescript
+test.describe('M10: CSV — Import products from CSV', () => {
+  test.describe.configure({ mode: 'parallel' });
+  test('PARSCA_CSV_TC_004 — Dry run does not write data', { tag: ['@Smoke', '@Regression'] }, async () => {
+    // ...
+  });
+});
+```
+
+`package.json` scripts gợi ý:
+```json
+{
+  "test": "playwright test",
+  "test:smoke": "playwright test --grep @Smoke",
+  "test:api": "playwright test --project=api",
+  "report": "playwright show-report"
+}
+```
+
+### 7. Code quality
+
+- [ ] Tên biến / method rõ nghĩa theo nghiệp vụ PARSCA
+- [ ] Method > 20 dòng → tách; logic lặp → helper trong Page / utils
+- [ ] Cập nhật README project nếu thêm Page / biến môi trường mới
+
+---
+
+Trả về: (1) bảng finding `Mức độ / File:dòng / Vấn đề / Đề xuất`, (2) diff đề xuất, (3) phiên bản code **cuối cùng** sạch, sẵn sàng commit, (4) tóm tắt PASS / FAIL / SKIP kèm lý do skip.

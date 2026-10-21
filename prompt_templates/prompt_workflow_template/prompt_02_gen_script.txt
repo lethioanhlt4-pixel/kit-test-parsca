@@ -1,0 +1,26 @@
+/gen-script
+
+# CONTEXT
+- Framework: Playwright Test (TypeScript) trong project playwright-parsca/
+- Design Pattern: Page Object Model (POM)
+- URL mục tiêu: {FE_URL} (FE SPA) / {API_URL} (REST API)
+- Prefix API: {API_PREFIX} (/v1 hoặc không prefix — đã xác nhận qua env)
+- Trình duyệt & Viewport: Chromium headed 1920x1080 (locale en-US)
+
+# TEST CASES CẦN TỰ ĐỘNG HÓA
+[Chọn 1 trong các cách cung cấp:]
+
+## Cách 1: Chỉ định file Test Case và bộ lọc Tag
+- File Test Case: practices/testcases/vendor/TC_PARSCA_VENDOR_02_DATA_SCOPE.md
+- Bộ lọc: Chỉ tự động hóa các TC có Automatable = "Yes" và Tag chứa "@Smoke"
+
+## Cách 2: Dán bảng Test Case trực tiếp
+| TC ID | Test Title | Pre-Condition | Steps | Expected Result | Priority | Tags |
+| PARSCA_SCOPE_TC_003 | V1 mở chi tiết sản phẩm V2 | V1 đăng nhập, biết ${V2_PRODUCT_ID} | 1. Vào {FE_URL}/vendor/products/${V2_PRODUCT_ID} | Hiển thị "Product not found or you do not have permission to view it." và GET trả 404 | Critical | @Smoke @DataScope |
+
+# QUY TRÌNH THỰC HIỆN
+Agent tự động thực thi tuần tự:
+1. Mở trình duyệt (headed 1920x1080), inspect DOM thực tế, thu thập locators chuẩn.
+2. Xây dựng hoặc tái sử dụng Page Objects tại pages/vendor/.
+3. Viết test spec tại tests/vendor/ (tiêu đề test bắt đầu bằng TC ID).
+4. Tự chạy test và auto-heal nếu lỗi cho đến khi PASS ổn định ít nhất 2 lần liên tiếp.

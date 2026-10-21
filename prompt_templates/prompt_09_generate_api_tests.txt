@@ -1,0 +1,70 @@
+# ROLE
+Bạn là Senior API Automation Test Engineer chuyên về kiểm thử REST API cho hệ thống PARSCA Backend (NestJS).
+
+# TASK
+Viết automation test cho các API endpoints liên quan đến Vendor từ tài liệu BA (Doc 04, 05, 06, 09, 10, 11, 12) hoặc danh mục API tại practices/testcases/api/API_TC_PARSCA_VENDOR.md.
+Nạp trước: kit-test-parsca/GEMINI.md, .agent/rules/core.md, .agent/rules/test-data.md, plans/automation/project_architecture/README.md.
+
+# CONTEXT
+- Framework: Playwright Test API (`@playwright/test` với `APIRequestContext`) trong `playwright-parsca/`
+- Base URL: `{API_URL}` — prefix `{API_PREFIX}` (`/v1` hoặc để trống) và bọc `{data, meta}` cấu hình qua `ApiClient.ts`
+- Cơ chế xác thực (Auth): Cookie httpOnly `access_token` (15 phút) / `refresh_token` (7 ngày); fallback `Authorization: Bearer <accessToken>`
+- 4 Role kiểm thử ma trận:
+  1. Không token (Unauthenticated) -> mong đợi 401
+  2. Token User thường -> mong đợi 403 đối với API quản trị/vendor
+  3. Token Vendor 1 (V1)
+  4. Token Vendor 2 (V2 - đối chứng BOLA/Scope)
+  5. Token Admin (quản trị nền tảng)
+
+Endpoint hoặc Nhóm API cần kiểm thử:
+[DÁN DANH SÁCH ENDPOINTS HOẶC CHỈ ĐỊNH NHÓM API VÀO ĐÂY]
+Ví dụ:
+Nhóm 1: API Vendor được gọi:
+- GET /products/admin/all
+- GET /products/admin/:idOrSlug
+- POST /products
+- PATCH /products/:id
+- DELETE /products/:id (204)
+- POST /products/upload
+- GET /products/import/template
+- POST /products/import?dryRun=true
+
+Nhóm 2: API cấm Vendor (mong đợi 403 "You do not have permission to access this resource"):
+- GET /users, PATCH /users/:id/role
+- GET /dashboard/stats
+- POST /product-brands
+- PATCH /fitment-options/:id
+
+# CONSTRAINTS
+1. Bao phủ đầy đủ các quy tắc bảo mật & phân quyền cốt lõi:
+   - Ma trận 4 vai (Data-driven): Kiểm tra phân quyền truy cập endpoint trên từng role.
+   - BOLA / Scope Isolation (BR-01, BR-02): V1 truy cập sản phẩm của V2 qua GET/PATCH/DELETE /products/admin/:id phải nhận 404 "Product not found" (KHÔNG PHẢI 403).
+   - Chống Mass Assignment (BR-05): Body chứa thuộc tính không khai báo (như `createdBy`, `vendorId`) phải bị từ chối với status 400.
+   - Session & Token Reuse (BR-12): Sử dụng lại refresh_token cũ phải nhận 401 "Invalid session" và vô hiệu hoá toàn bộ phiên.
+   - Rate Limiting (BR-11): Gửi login > 5 lần/phút/IP nhận 429 Too Many Requests.
+2. Kiểm tra toàn diện HTTP Status Codes:
+   - 200/201: Thành công (dữ liệu trả về đúng schema và thuộc về đúng vendor).
+   - 204: Xoá thành công (DELETE /products/:id).
+   - 400: Lỗi validation dữ liệu, thiếu trường bắt buộc, giá âm, stockCount = 0, trường lạ.
+   - 401: Chưa xác thực hoặc token hết hạn/không hợp lệ.
+   - 403: Không có quyền truy cập endpoint quản trị nền tảng.
+   - 404: Sản phẩm không tồn tại hoặc thuộc về vendor khác.
+   - 409: Trùng SKU hoặc trùng slug toàn hệ thống.
+3. Test Data & Quản lý vòng đời dữ liệu:
+   - SKU sinh ngẫu nhiên: `AUTO-API-${Date.now()}`.
+   - Setup dữ liệu qua API trong `beforeAll` hoặc `beforeEach`.
+   - Teardown: Thu hồi và dọn dẹp các sản phẩm có tiền tố `AUTO-` bằng lệnh DELETE sau khi hoàn tất test.
+   - Tuyệt đối không in/log token, cookie, hoặc credentials ra console log.
+4. Cấu trúc mã nguồn:
+   - Sử dụng lớp `api/ApiClient.ts` để tự động xử lý `API_PREFIX` và unwrap dữ liệu `{data, meta}` khi bật cờ `API_WRAPPED`.
+
+# OUTPUT FORMAT
+Cấu trúc file bàn giao:
+1. API Client & Service:
+   - `api/ApiClient.ts`: Xử lý base request, prefix, unwrap
+   - `api/ProductsApi.ts`: Wrapper cho các endpoint sản phẩm
+2. Test Spec files:
+   - `tests/api/perm.matrix.spec.ts`: Test ma trận 4 vai cho các nhóm API
+   - `tests/api/scope.product-access.spec.ts`: Test BOLA & phạm vi dữ liệu giữa các Vendor
+3. Hướng dẫn chạy và xuất kết quả JUnit cho CI/CD:
+   npx playwright test tests/api/ --project=api --reporter=list,junit

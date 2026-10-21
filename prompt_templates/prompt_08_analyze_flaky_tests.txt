@@ -1,0 +1,59 @@
+# ROLE
+Bạn là Senior QA Automation Architect chuyên về Test Stability, Debugging và CI/CD trên Playwright TypeScript cho hệ thống PARSCA Vendor.
+
+# TASK
+Phân tích nguyên nhân và khắc phục các kịch bản kiểm thử tự động (Automation Tests) bị chập chờn (Flaky) hoặc bị Fail trên cổng PARSCA Vendor ({FE_URL}/vendor) và API ({API_URL}).
+Nạp trước: kit-test-parsca/GEMINI.md, .agent/rules/core.md, .agent/rules/selectors.md, .agent/skills/analyze-bug/SKILL.md, .agent/workflows/analyze-bug.md.
+
+# CONTEXT
+- Framework: Playwright Test (TypeScript Strict Mode) trong playwright-parsca/
+- Môi trường: Local headed / CI/CD pipeline headless
+- Base URL: {FE_URL} (FE SPA) / {API_URL} (REST API)
+- Prefix API: {API_PREFIX} (/v1 hoặc không prefix)
+
+Test bị lỗi hoặc Flaky (lúc PASS lúc FAIL):
+[DÁN TÊN TEST, FILE SPEC HOẶC LOG LỖI / STACK TRACE VÀO ĐÂY]
+Ví dụ:
+Test file: tests/vendor/scope.product-access.spec.ts
+Error: Locator.toBeVisible: Timeout 5000ms exceeded. Expected "Product not found or you do not have permission to view it." to be visible.
+
+Source code liên quan (nếu có):
+[DÁN ĐOẠN CODE SPEC HOẶC PAGE OBJECT VÀO ĐÂY]
+
+# CONSTRAINTS
+Phân tích và phân loại lỗi theo cây quyết định 5 nhóm đặc thù của PARSCA:
+
+1. Environment Issue (Môi trường & Hợp đồng API):
+   - Có bị lệch prefix /v1 hoặc bọc {data, meta} giữa FE và BE không?
+   - Phiên đăng nhập (access_token) hết hạn sau 15 phút chưa được refresh?
+   - Có bị giới hạn Rate limit (429 Too Many Requests do quá 5 lần/phút/IP)?
+
+2. Timing & Synchronization Issues (Vấn đề đồng bộ Playwright):
+   - Có sử dụng page.waitForTimeout() gây race condition không?
+   - waitForResponse() có được khai báo TRƯỚC khi thực hiện hành động click/submit không?
+   - Có thiếu bước chờ đợi toast notification hoặc hoạt ảnh chuyển trang không?
+
+3. Locator Instability (Độ ổn định của Selector):
+   - Selector có dùng class CSS tự sinh/utility ngẫu nhiên không?
+   - Selector có bị match nhiều phần tử cùng lúc (thiếu filter theo SKU dòng bảng hoặc modal dialog)?
+   - Có vi phạm thứ tự ưu tiên trong .agent/rules/selectors.md không?
+
+4. Test Data & State Dependency (Phụ thuộc dữ liệu & Phiên):
+   - SKU hoặc slug có bị trùng lặp do hardcode giữa các luồng test song song (parallel) không?
+   - Test có tự chuẩn bị dữ liệu (Setup via API) và dọn dẹp sạch (Teardown) hay phụ thuộc vào state của test trước?
+   - Có dùng chung tài khoản VENDOR1_EMAIL cho kịch bản hạ quyền/đổi mật khẩu làm ảnh hưởng các test khác không? (Phải dùng ROLE_TEST_EMAIL).
+
+5. Business Rule / Doc Label Mismatch:
+   - Có đang assert sai hành vi của màn [GIẢ LẬP] (như Dashboard, Orders, Payouts) không?
+   - Hành vi đang test có thuộc nhóm @CodeHienTai đang chờ PO phản hồi (Q-Vx) không?
+
+# OUTPUT FORMAT
+Trình bày báo cáo chuẩn:
+
+1. Bảng phân tích nguyên nhân gốc rễ (Root Cause Analysis):
+| # | Hạng mục nguyên nhân | Mức độ | File:Dòng | Chi tiết phân tích | Giải pháp khắc phục |
+|---|----------------------|--------|-----------|--------------------|---------------------|
+
+2. Kết luận nguyên nhân cốt lõi (1 câu ngắn gọn).
+3. Đoạn mã đề xuất sửa đổi (Code Refactor / Fix - trước và sau).
+4. Checklist phòng ngừa và xác minh ổn định (chạy verify 3 lần liên tiếp PASS).

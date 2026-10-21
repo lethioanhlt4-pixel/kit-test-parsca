@@ -1,0 +1,89 @@
+# ============================================================
+# ONE-CLICK AUTOMATION PROMPT — PARSCA Vendor
+# ============================================================
+# Workflow: /gen-script (kit-test-parsca)
+# ============================================================
+#
+# CÁCH DÙNG:
+# 1. Copy toàn bộ nội dung bên dưới dòng "---START---"
+# 2. Thay thế các phần trong [...] bằng dữ liệu thực tế
+#    (KHÔNG dán mật khẩu — chỉ tên biến môi trường)
+# 3. Paste vào Antigravity chat (workspace root = kit-test-parsca/) và gửi
+# 4. Chờ AI tự xử lý toàn bộ 6 bước
+#
+# ============================================================
+
+---START---
+
+/gen-script
+
+Bạn là Senior Automation Engineer với 10 năm kinh nghiệm. Hãy tự động hóa các Manual Test Cases PARSCA Vendor bên dưới thành automation test script hoàn chỉnh, chạy được, PASS ổn định.
+
+=== TECH STACK ===
+
+- Framework: Playwright (TypeScript)
+- Build tool: npm
+- Test Runner: Playwright Test
+- Reporting: Playwright HTML Reporter + JUnit (test-results/junit.xml)
+- Project: playwright-parsca/ (theo plans/automation/project_architecture/README.md)
+
+=== THÔNG TIN MÔI TRƯỜNG ===
+
+- FE URL: [{FE_URL} — VD: https://staging.parsca.example]
+- API URL: [{API_URL}]
+- Prefix API + format response: [/v1 + {data, meta} HOẶC không prefix + raw — ĐÃ xác nhận với Dev ngày ...]
+- Tài khoản: đọc từ .env — VENDOR1_EMAIL/PASSWORD, VENDOR2_*, ADMIN_*, USER_*, ROLE_TEST_*, ROLE_TEST_NEW_PASSWORD
+- Dữ liệu đối chứng (.env): V2_PRODUCT_ID, V2_PRODUCT_SKU, V2_PRODUCT_SLUG, ADMIN_PRODUCT_ID, ADMIN_PRODUCT_SKU
+- Trình duyệt: Chromium, viewport 1920x1080, locale en-US
+
+=== KIẾN TRÚC PROJECT ===
+
+[Chọn 1 trong 2:]
+
+Option A: Tạo project mới — scaffold playwright-parsca/ theo project_architecture/README.md
+  (fixtures/auth.setup.ts 4 vai → .auth/*.json, fixtures/test.ts, pages/vendor/*, api/ApiClient.ts có prefix cấu hình, utils/dataFactory.ts, utils/env.ts)
+
+Option B: Project có sẵn — mô tả cấu trúc hiện tại:
+  [VD: playwright-parsca/pages/vendor/ProductListPage.ts đã có; thêm spec vào tests/vendor/]
+
+=== MANUAL TEST CASES ===
+
+[Dán bảng TC hoặc chỉ định file + bộ lọc. Ví dụ:
+
+File: practices/testcases/vendor/TC_PARSCA_VENDOR_02_DATA_SCOPE.md — chỉ TC có Automatable = Yes và tag @Smoke
+
+PARSCA_SCOPE_TC_003: V1 mở trang chi tiết sản phẩm của V2 bằng URL trực tiếp
+- Pre-condition: V1 đăng nhập; biết ${V2_PRODUCT_ID}
+- Steps:
+  1. Truy cập {FE_URL}/vendor/products/${V2_PRODUCT_ID}
+  2. Quan sát Network
+- Expected:
+  1. Hiển thị "Product not found or you do not have permission to view it."
+  2. GET /products/admin/${V2_PRODUCT_ID} trả 404 "Product not found" (không phải 403)
+- Tags: @Smoke @DataScope @Security
+]
+
+=== NGUYÊN TẮC BẮT BUỘC ===
+
+1. Pre-flight: Chưa xác nhận prefix /v1 hoặc thiếu biến .env → DỪNG và hỏi tôi, không đoán.
+2. DOM Recon First: Mở browser (MCP) theo thứ tự navigate → resize(1920x1080) → wait_for → snapshot. TUYỆT ĐỐI không đoán selector. Ưu tiên getByRole > getByLabel > getByPlaceholder > getByTestId > getByText > id/name > CSS > XPath (theo .agent/rules/selectors.md).
+3. Page Object Model: Locator chỉ trong pages/; spec không có page.locator inline.
+4. Smart Waits: KHÔNG dùng page.waitForTimeout. Dùng expect().toBeVisible(), toHaveURL(), waitForResponse().
+5. Test Data: SKU AUTO-<MOD>-<timestamp>, email auto.<mod>.<tc>.<ts>@auto.test qua utils/dataFactory.ts. Setup bằng API, teardown xoá sản phẩm AUTO-* do chính vendor tạo. Không xoá dữ liệu không có tiền tố AUTO-.
+6. Mapping nhãn: @CodeHienTai chưa có câu trả lời PO → test.fixme() + annotation Q-Vx; @GiaLap → chỉ assert hiển thị + không có request API cấm; @NeedDevSupport → test.skip có điều kiện.
+7. Self-fix Loop: Chạy headed, FAIL thì đọc log/trace, sửa, chạy lại đến khi PASS 2 lần liên tiếp; sau đó chạy headless.
+8. Bảo mật: Không log/in credentials, cookie, token; không commit .env, .auth/, trace.
+9. Clean Code: Sau khi PASS, xoá console.log, code comment-out, locator/import thừa.
+
+=== QUY TRÌNH THỰC HIỆN (AI tự chạy toàn bộ) ===
+
+Tự động thực hiện tuần tự 6 bước sau mà KHÔNG cần hỏi tôi (trừ khi thiếu pre-flight hoặc gặp business rule mâu thuẫn với doc):
+
+1. Tiếp nhận context, kiểm tra pre-flight, xác nhận scope TC
+2. Mở browser, điều hướng {FE_URL}, inspect DOM, thu thập locators (bảng Page / Element / Locator / Fallback / Verified)
+3. Thiết kế POM: pages/vendor/*, api/* với locators từ Bước 2
+4. Sinh Test Data: utils/dataFactory.ts + danh sách file test cần có (ảnh, CSV)
+5. Sinh spec: mỗi test có TC ID ở đầu title + tag; chạy, self-fix đến PASS 2 lần
+6. Cleanup + review theo checklist /review-script, báo cáo PASS / FAIL / SKIP (kèm lý do)
+
+Bắt đầu ngay. Xác nhận ngắn gọn kết quả pre-flight rồi tiến hành Bước 2 (mở browser inspect DOM).

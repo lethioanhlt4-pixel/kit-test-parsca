@@ -1,0 +1,80 @@
+# ============================================================
+# BƯỚC 3: PHÂN RÃ HỆ THỐNG (Decomposition) — PARSCA Vendor
+# ============================================================
+# Đây là prompt độc lập — copy & paste vào bất kỳ AI nào
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI đã trả lời hết câu hỏi Q&A ở Bước 2
+# 2. Giữ nguyên mã module chuẩn (ROLE, LOGIN, SCOPE...)
+# 3. Review kết quả → sang Bước 4
+# ============================================================
+
+---START---
+
+Giả định rằng các yêu cầu đã được làm rõ thông qua Q&A ở Bước 2 (câu chưa trả lời dùng giả định đã ghi).
+
+Hãy tiến hành **phân rã hệ thống (Decomposition)** PARSCA Vendor thành các Module / Sub-module để quản lý kiểm thử.
+
+## Yêu cầu output:
+
+### 1. Phân rã Module (Feature Mapping)
+
+Dùng **đúng** mã module chuẩn sau (không tự đặt mã mới). Chỉ đi sâu các module trong scope đợt này: [VD: CSV, SCOPE].
+
+| # | Mã | Module | Doc | Giả lập |
+|---|----|--------|-----|---------|
+| M1 | ROLE | Cấp / thu hồi role vendor | 02 | – |
+| M2 | LOGIN | Đăng nhập & điều hướng | 03 | – |
+| M3 | SESS | Phiên & đăng xuất | 04 | – |
+| M4 | SCOPE | Phạm vi dữ liệu | 06 | – |
+| M5 | PLIST | Danh sách sản phẩm | 07 | – |
+| M6 | PDTL | Chi tiết sản phẩm | 08 | – |
+| M7 | PSTAT | Đổi trạng thái & xoá | 10 | – |
+| M8 | PFORM | Thêm / sửa sản phẩm | 09 | – |
+| M9 | IMG | Upload ảnh | 11 | – |
+| M10 | CSV | Import CSV | 12 | – |
+| M11 | DASH | Dashboard | 13 | ✅ |
+| M12 | ORD | Danh sách đơn | 14 | ✅ |
+| M13 | ORDD | Chi tiết đơn | 15 | ✅ |
+| M14 | REV | Đánh giá | 16 | ✅ |
+| M15 | SET | Settings Brand / Fitment | 18 | ✅ |
+| M16 | PAY | Payouts | 17 | ✅ |
+| M17 | PROF | Hồ sơ | 19 | Một phần (avatar thật) |
+| M18 | WEB | Vendor trên website | 20 | – |
+| – | API | Ma trận phân quyền API | 05 | – |
+
+Sub-module gợi ý:
+- **PFORM:** (a) Nhận diện — Name, SKU, Price, Compare at, Brand; (b) Phân loại — Department, Subcategory; (c) Gallery ảnh; (d) Status, New, In stock, Condition, Availability, Rating, Stock count; (e) OEM / Alternate part numbers, Compatible model; (f) Mô tả; Tạo vs Sửa.
+- **CSV:** Tải template; Check file (dry run); Import thật; Báo cáo lỗi theo dòng; Import lại (cập nhật, không nhân đôi).
+- **PSTAT:** Đổi trạng thái tại danh sách; Xoá (hộp thoại "Delete product?"); Dọn ảnh.
+- **SCOPE:** Danh sách; Chi tiết theo id / slug; Sửa; Xoá; Đổi trạng thái; Import với SKU của người khác.
+- **API:** Nhóm 1 (công khai), Nhóm 2 (vendor + admin), Nhóm 3 (chỉ admin) × 4 vai.
+
+### 2. Mô tả chức năng
+
+Với mỗi Module/Sub-module trong scope, cung cấp:
+- Mã + tên module
+- Mô tả chức năng (1–2 câu) bám theo doc
+- Route FE / endpoint BE chính
+- Thành phần UI chính (nút, hộp thoại, toast, bộ đếm…)
+- Đánh dấu `[GIẢ LẬP]` nếu là màn dữ liệu mẫu
+
+### 3. Sơ đồ phụ thuộc (Dependencies)
+
+Chỉ ra phụ thuộc và dữ liệu tương tác giữa các Module, tối thiểu gồm:
+
+[Gợi ý PARSCA:
+- ROLE → LOGIN: role quyết định guard `/vendor/*`, `/admin/*`
+- LOGIN / SESS → mọi module: cookie phiên, refresh, 401
+- PFORM / CSV → SCOPE: `createdBy` = tài khoản tạo
+- IMG → PFORM: ảnh upload là input của Gallery
+- PFORM / CSV / PSTAT → WEB: Active hiện ngay, Draft / Archived / Xoá → 404 trên storefront
+- CSV → SET / bộ lọc website: brand / xe mới (Q-V5)
+- PSTAT → IMG: xoá sản phẩm dọn ảnh (trừ ảnh dùng chung)
+- API (05) là lớp kiểm tra chéo cho ROLE, SCOPE, PFORM, CSV]
+
+Vẽ thêm sơ đồ dạng tree hoặc mermaid `flowchart LR` cho các phụ thuộc trên.
+
+---
+
+Trình bày kết quả bằng **Markdown**, dùng bảng hoặc sơ đồ cây. Tránh ký tự `|` bên trong ô bảng.

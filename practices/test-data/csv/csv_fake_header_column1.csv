@@ -1,0 +1,4 @@
+Column1,Column2,Column3,Column4
+sku,name,price,stockCount
+AUTO-CSV-0401,Fake Header One 20261020,6.00,2
+AUTO-CSV-0402,Fake Header Two 20261020,6.00,2

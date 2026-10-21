@@ -1,0 +1,6 @@
+sku,name,price,stockCount
+AUTO-CSV-0101,Mixed Valid One 20261020,10.00,3
+AUTO-CSV-0102,Mixed Valid Two 20261020,11.00,3
+AUTO-CSV-0103,Mixed Valid Three 20261020,12.00,3
+AUTO-CSV-0104,,13.00,3
+AUTO-CSV-0105,Mixed Bad Price 20261020,abc,3

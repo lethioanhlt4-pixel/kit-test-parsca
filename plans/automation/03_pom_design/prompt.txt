@@ -1,0 +1,69 @@
+# ============================================================
+# BƯỚC 3: THIẾT KẾ KIẾN TRÚC POM (POM Design) — PARSCA Vendor
+# ============================================================
+# Workflow: /gen-script (tiếp tục)
+# Skill:    generate-playwright-script
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI đã review locators + Network ở Bước 2
+# 2. AI sẽ thiết kế pages/ + api/ — CHƯA sinh spec
+# 3. Review kiến trúc POM → sang Bước 4
+# ============================================================
+
+---START---
+
+Dựa trên bảng locators **đã verify trên DOM thật** và bảng Network ở Bước 2, hãy thiết kế **Page Object Model** cho `playwright-parsca/`.
+
+## Yêu cầu:
+
+### 1. Định nghĩa Class
+
+- Mỗi màn / dialog là 1 class; đặt đúng thư mục theo `plans/automation/project_architecture/README.md`
+- Gợi ý theo scope: `LoginPage`, `vendor/VendorShell`, `vendor/ProductListPage`, `vendor/ProductFormPage`, `vendor/ProductDetailPage`, `vendor/ImportCsvDialog`, `vendor/ProfilePage`, `storefront/ProductPublicPage`, `vendor/simulated/*`
+- API: `api/ApiClient` (prefix `API_PREFIX`, unwrap khi `API_WRAPPED`), `api/AuthApi`, `api/ProductsApi`, `api/UsersApi`
+
+### 2. Khai báo Locators
+
+- Dùng **chính xác** locators ở Bước 2 (không tự đổi trừ khi nêu lý do)
+- Khai báo dạng getter trong class; dialog scope bằng `this.dialog.getBy...`
+- Row bảng: method nhận SKU, trả `getByRole('row').filter({ hasText: sku })`
+
+Ví dụ (chỉ minh hoạ cấu trúc — giá trị phải lấy từ Bước 2):
+```typescript
+export class ImportCsvDialog {
+  constructor(private readonly page: Page) {}
+  get dialog() { return this.page.getByRole('dialog', { name: '<tên dialog từ Bước 2>' }); }
+  get checkFileButton() { return this.dialog.getByRole('button', { name: '<tên nút từ Bước 2>' }); }
+}
+```
+
+### 3. Đóng gói Methods
+
+- Tên theo hành động nghiệp vụ PARSCA, mỗi method 1 hành động rõ ràng
+- Method điều hướng trả về Page tiếp theo (fluent) khi hợp lý
+- Method có gọi API quan trọng → trả `Response` (dùng `waitForResponse`) để spec assert status
+
+```
+✅ ĐÚNG: createProduct(data), uploadImages(files), runDryRun(file), importRows(),
+         changeStatus(sku, 'draft'), deleteProduct(sku), expectNotFoundMessage()
+❌ SAI:  clickButton(), inputText(), clickRow3()
+```
+
+### 4. API layer
+
+- `ProductsApi`: `create(payload)`, `get(idOrSlug)`, `patch(id, body)`, `remove(id)`, `listMine(params)`, `importCsv(file, { dryRun })`
+- `UsersApi.setRole(userId, role)` — chỉ dùng với admin + `ROLE_TEST`
+- Mọi path đi qua `ApiClient` (không hardcode `/v1`)
+- `fixtures/test.ts`: fixture `apiAs(role)` tạo `APIRequestContext` với storageState `.auth/<role>.json` (anonymous = không storageState)
+
+### 5. Quy tắc quan trọng
+
+- ⛔ **CHƯA sinh spec**
+- ⛔ Không thêm locator chưa có ở Bước 2; thiếu → ghi "Cần recon bổ sung"
+- ✅ Màn `@GiaLap` chỉ có method đọc / assert hiển thị
+- ✅ Không `waitForTimeout`; không log credentials
+- ✅ Tuân thủ `.agent/rules/selectors.md` và skill `generate-playwright-script`
+
+---
+
+Trình bày cấu trúc POM (cây file + code từng class) để tôi review trước khi sang Bước 4.

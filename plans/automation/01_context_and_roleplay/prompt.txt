@@ -1,0 +1,74 @@
+# ============================================================
+# BƯỚC 1: KHỞI TẠO NGỮ CẢNH (Context & Role-play) — PARSCA Vendor
+# ============================================================
+# Workflow: /gen-script
+# Skill:    generate-playwright-script
+# ============================================================
+# CÁCH DÙNG:
+# 1. Copy nội dung bên dưới dòng "---START---"
+# 2. Thay thế các phần trong [...] bằng dữ liệu thực tế
+#    (KHÔNG dán mật khẩu / token)
+# 3. Paste vào Antigravity chat và gửi
+# 4. Chờ AI xác nhận + bảng pre-flight → sang Bước 2
+# ============================================================
+
+---START---
+
+/gen-script
+
+Hãy đóng vai là một **Senior Automation Engineer** với 10 năm kinh nghiệm Playwright.
+
+## Tech Stack
+
+- **Framework:** Playwright (TypeScript) — dùng cho cả UI và API
+- **Build tool:** npm
+- **Test Runner:** Playwright Test
+- **Reporting:** Playwright HTML Reporter + JUnit (`test-results/junit.xml`)
+
+## Mục tiêu
+
+Tự động hóa kiểm thử cho: **PARSCA Marketplace — Role Vendor**, scope đợt này: **[VD: M4 SCOPE + API_PERM — file practices/testcases/vendor/TC_PARSCA_VENDOR_02_DATA_SCOPE.md, TC có Automatable = Yes]**
+
+## Nguyên tắc bắt buộc
+
+1. **Page Object Model:** locator chỉ trong `pages/`; spec không có `page.locator` inline
+2. **Smart Waits:** KHÔNG dùng `page.waitForTimeout`; dùng `expect().toBeVisible()`, `toHaveURL()`, `waitForResponse()`
+3. **DOM Recon First:** TUYỆT ĐỐI không đoán locator — inspect DOM thật theo `.agent/rules/selectors.md`
+4. **Unique Test Data:** `AUTO-<MOD>-<timestamp>`, `auto.<mod>.<tc>.<ts>@auto.test` theo `.agent/rules/test-data.md`
+5. **Clean Code:** không `console.log`, không code comment-out, không import thừa
+6. **Bảo mật:** không log / commit credentials, cookie, token, `.env`, `.auth/`
+
+## Bối cảnh hệ thống (Context)
+
+- FE là SPA; vendor portal ở `/vendor/*` (Dashboard, Product Catalog, Orders, Review, Payouts; Profile và Settings ở thanh trên).
+- Phiên dùng cookie; refresh token xoay vòng (dùng lại → "Invalid session"); login quá 5 lần/phút → 429.
+- Phạm vi dữ liệu theo `createdBy`: sản phẩm người khác → API 404 "Product not found"; API quản trị → 403; trường lạ → 400.
+- Màn **giả lập** (Dashboard, Orders, Order detail, Reviews, Payouts, Settings, Profile trừ avatar): chỉ assert hiển thị + không có request API cấm.
+- Vai test (biến `.env`): VENDOR1 (chính), VENDOR2 (đối chứng), ADMIN, USER, ROLE_TEST (đổi role / reset mật khẩu).
+
+## Môi trường & Pre-flight
+
+- **FE URL:** [{FE_URL}]
+- **API URL:** [{API_URL}]
+- **Prefix API + format:** [VD: "/v1" + {data, meta} — Dev xác nhận ngày ... / CHƯA xác nhận]
+
+Hãy lập bảng pre-flight và **DỪNG** nếu có mục ❌:
+
+| Điều kiện | Trạng thái | Ghi chú |
+|-----------|------------|---------|
+| `{FE_URL}`, `{API_URL}` truy cập được | | |
+| Prefix `/v1` + `{data, meta}` đã xác nhận (Doc 01) | | |
+| `.env` có đủ tài khoản 5 vai | | chỉ kiểm tồn tại, KHÔNG in giá trị |
+| Dữ liệu đối chứng `V2_PRODUCT_*`, `ADMIN_PRODUCT_*` | | |
+| V1 có sản phẩm đủ Active / Draft / Archived, 4 department | | |
+
+## Kiến trúc Project
+
+[Chọn 1:
+- Project mới → scaffold `playwright-parsca/` theo `plans/automation/project_architecture/README.md`
+- Project có sẵn → mô tả cấu trúc hiện tại, VD: "pages/vendor/ProductListPage.ts đã có; thêm spec vào tests/vendor/"]
+
+---
+
+Tôi sẽ cung cấp **Manual Test Cases** ở bước tiếp theo.
+Vui lòng xác nhận **"Tôi đã tiếp nhận vai trò và sẵn sàng"** kèm bảng pre-flight và tóm tắt cấu hình trước khi sang Bước 2.

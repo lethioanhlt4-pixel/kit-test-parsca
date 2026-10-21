@@ -1,0 +1,47 @@
+# ROLE
+Bạn là Senior Test Automation Architect chuyên Node.js và Playwright, có kinh nghiệm xây dựng framework E2E + API cho marketplace nhiều role, tối ưu CI/CD.
+
+# CONTEXT
+Tôi cần dựng framework gốc playwright-parsca/ cho kiểm thử role Vendor của PARSCA — Marketplace phụ tùng (Marine, Auto, Door, Tools).
+PARSCA chốt 1 stack duy nhất: Playwright Test + TypeScript cho cả UI và API (dùng chung fixtures, storageState, data factory).
+Kiến trúc chuẩn đã được định nghĩa tại plans/automation/project_architecture/README.md — BẮT BUỘC tuân theo.
+
+Đặc thù hệ thống:
+- FE SPA: {FE_URL} — route /login, /vendor/*, /admin/*, /profile, storefront
+- API: {API_URL} — prefix chưa chốt: FE gọi /v1 + đọc {data, meta}, BE bản zip không có /v1 và không bọc (Doc 01) → prefix & unwrap phải CẤU HÌNH ĐƯỢC (API_PREFIX, API_WRAPPED)
+- Auth: JWT cookie httpOnly access_token (15 phút) / refresh_token (7 ngày), sameSite=lax; fallback Authorization: Bearer. Mật khẩu mã hoá RSA ở trình duyệt (passwordCiphertext) → ưu tiên lấy storageState qua flow đăng nhập đã recon, không tự mã hoá thủ công nếu chưa xác nhận với Dev
+- Rate limit: login 5 lần/phút/IP (→ 429); 600 request/phút toàn hệ thống
+- 4 vai đăng nhập: vendor1, vendor2, admin, user (ROLE_TEST không dùng storageState chung)
+
+# TASK
+Thiết kế và viết code boilerplate cho playwright-parsca/ gồm:
+1. Folder Structure: playwright.config.ts, package.json, tsconfig.json, .env.example, .gitignore, README.md, fixtures/, pages/ (BasePage, LoginPage, vendor/*, vendor/simulated/*, storefront/*), api/ (ApiClient, AuthApi, ProductsApi, UsersApi), utils/ (env.ts, dataFactory.ts, files.ts), test-data/ (images/, csv/, generated/), tests/ (api/, vendor/), .github/workflows/playwright.yml.
+2. Page Object Model: BasePage (goto(path), expectToast(text), waitForApi(urlPart)) + LoginPage kế thừa. Page Object màn vendor CHỈ tạo sau khi đã inspect DOM thật.
+3. Configuration: playwright.config.ts với projects setup → vendor-ui → api; Chromium 1920x1080, locale en-US; baseURL = FE_URL; retries 1 trên CI; trace/screenshot retain-on-failure; reporters html + json + junit (test-results/junit.xml).
+4. Environment Variables: dotenv + utils/env.ts validate fail-fast. .env.example CHỈ tên biến:
+   FE_URL, API_URL, API_PREFIX, API_WRAPPED, VENDOR1_EMAIL, VENDOR1_PASSWORD, VENDOR2_EMAIL, VENDOR2_PASSWORD, ADMIN_EMAIL, ADMIN_PASSWORD, USER_EMAIL, USER_PASSWORD, ROLE_TEST_EMAIL, ROLE_TEST_PASSWORD, ROLE_TEST_NEW_PASSWORD, V2_PRODUCT_ID, V2_PRODUCT_SKU, V2_PRODUCT_SLUG, ADMIN_PRODUCT_ID, ADMIN_PRODUCT_SKU
+5. Test Data: utils/dataFactory.ts sinh sku() = AUTO-<MOD>-<Date.now()>, productName() = "Auto <Mod> TC<NNN> <YYYYMMDD>", email() = auto.<mod>.<tc>.<ts>@auto.test, productPayload() tối thiểu (name, sku, price, departmentId, subcategoryId, images, stockCount) — tên trường lấy từ request POST /products thật, KHÔNG đoán. Data-driven: ma trận 4 vai × endpoint (Doc 05) cho tests/api/perm.matrix.spec.ts.
+6. Fixtures: fixtures/auth.setup.ts lưu .auth/<role>.json cho 4 vai; fixtures/test.ts extend: pages, apiAs(role), dataFactory, env, cleanup registry (afterEach xoá sản phẩm AUTO-* do chính vendor tạo qua DELETE /products/:id).
+7. Dependencies: package.json scripts test, test:smoke (--grep @Smoke), test:api, test:headed, report.
+
+# CONSTRAINTS
+* TypeScript Strict Mode; test runner @playwright/test.
+* Page Object Model: locator CHỈ trong pages/; spec chỉ Arrange → Act → Assert.
+* Không page.waitForTimeout(); dùng expect().toBeVisible(), toHaveURL(), waitForResponse() (đăng ký trước hành động).
+* Locator ưu tiên theo .agent/rules/selectors.md: getByRole → getByLabel → getByPlaceholder → getByTestId → getByText → id/name → CSS ngữ nghĩa → XPath tương đối (ghi lý do).
+* KHÔNG hard-code URL, prefix /v1, credentials, ID sản phẩm — tất cả từ .env.
+* Title test bắt đầu bằng TC ID (vd: "PARSCA_SCOPE_TC_003 — V1 mở chi tiết sản phẩm V2 → 404") + tag.
+* Mapping nhãn: @CodeHienTai chưa có câu trả lời PO → test.fixme() + annotation Q-Vx; @GiaLap → chỉ assert hiển thị + không có request API cấm.
+* Không log / commit credentials, cookie, token, .env, .auth/.
+* Comment code ngắn gọn bằng tiếng Anh (theo GEMINI.md của kit).
+* Thông tin đăng nhập: {FE_URL}/login với ${VENDOR1_EMAIL} / ${VENDOR1_PASSWORD} (đọc từ .env — không dán giá trị thật).
+
+# OUTPUT FORMAT
+1. Directory Structure: cây thư mục playwright-parsca/ + nhiệm vụ từng thư mục.
+2. Setup & Dependencies: package.json + lệnh npm init / npx playwright install chromium.
+3. Core Configurations: playwright.config.ts, utils/env.ts, .env.example.
+4. API Layer: api/ApiClient.ts (API_PREFIX + unwrap {data, meta} khi API_WRAPPED=true), AuthApi.ts, ProductsApi.ts.
+5. Page Object Model: BasePage.ts, LoginPage.ts (locator đã verify trên DOM).
+6. Custom Fixtures: fixtures/auth.setup.ts, fixtures/test.ts.
+7. Sample tests: tests/vendor/login.guard.spec.ts (PARSCA_LOGIN_*) và tests/api/scope.product-access.spec.ts (V1 gọi GET /products/admin/${V2_PRODUCT_ID} → 404 "Product not found").
+8. How to run: headed, UI mode, --grep @Smoke, project api, xem HTML report, JUnit cho Xray (node scripts/integrations/jira/xray_importer.js --format playwright --file test-results/results.json --dry-run).

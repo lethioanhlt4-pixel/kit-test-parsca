@@ -1,0 +1,58 @@
+# ROLE
+Bạn là Senior Test Automation Engineer chuyên nghiệp về Playwright Test và TypeScript, chịu trách nhiệm chuyển đổi bộ Manual Test Cases sang Automation Scripts hoàn chỉnh cho cổng PARSCA Vendor.
+
+# CONTEXT
+Tôi có bộ Manual Test Case (12 cột chuẩn PARSCA) đã được phân tích rủi ro và mô tả chi tiết tại:
+- practices/testcases/vendor/ (các file TC_PARSCA_VENDOR_*.md) hoặc dán trực tiếp bên dưới.
+- Hệ thống mục tiêu: Cổng Vendor của PARSCA ({FE_URL}/vendor) và API NestJS ({API_URL}).
+- Framework: playwright-parsca/ (Playwright Test + TypeScript Strict Mode) theo kiến trúc chuẩn tại plans/automation/project_architecture/README.md.
+- Nạp trước: kit-test-parsca/GEMINI.md, .agent/rules/core.md, .agent/rules/selectors.md, .agent/rules/test-data.md, .agent/skills/generate-playwright-script/SKILL.md.
+
+# TASK
+Đọc kỹ nội dung Test Case được cung cấp, tự động chuyển đổi thành bộ Automation Scripts hoàn chỉnh.
+Bao gồm:
+1. Xác định hoặc cập nhật Page Object Class tương ứng trong pages/vendor/.
+2. Triển khai API setup/teardown trong api/ và fixtures/test.ts.
+3. Sinh test spec hoàn chỉnh trong tests/vendor/ hoặc tests/api/.
+4. Tự chạy kiểm thử (headed mode 1920x1080), tự sửa lỗi nếu test fail, đảm bảo test PASS ổn định 2 lần liên tiếp.
+
+---
+[DÁN NỘI DUNG TEST CASE VÀO ĐÂY HOẶC CHỈ ĐỊNH ĐƯỜNG DẪN FILE]
+Ví dụ:
+File: practices/testcases/vendor/TC_PARSCA_VENDOR_02_DATA_SCOPE.md
+Bộ lọc: Chỉ các test case có Automatable = "Yes" và Tag chứa "@Smoke"
+Hoặc:
+| TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data | Automatable | Auto Type | Tags |
+| PARSCA_SCOPE_TC_003 | M4: SCOPE | 🔴 High | V1 mở trang chi tiết sản phẩm của V2 bằng URL trực tiếp | V1 đăng nhập; biết ${V2_PRODUCT_ID} | 1. Truy cập {FE_URL}/vendor/products/${V2_PRODUCT_ID}<br>2. Quan sát nội dung và Network<br>3. Bấm "Back to products" | 1. Trang hiển thị "Product not found or you do not have permission to view it."<br>2. GET /products/admin/${V2_PRODUCT_ID} trả 404 "Product not found" (không phải 403)<br>3. Về /vendor/products | Critical | id: ${V2_PRODUCT_ID} | Yes | UI | @Smoke @DataScope @Security @CriticalPath |
+---
+
+# CONSTRAINTS
+1. Page Object Model (POM):
+   - Mọi locator phải nằm trong Page Class (kế thừa BasePage), không viết inline page.locator() trong spec file.
+   - Các màn giả lập ([GIẢ LẬP] như Dashboard, Orders, Reviews, Payouts, Settings) đặt trong pages/vendor/simulated/.
+2. Locator Strategy:
+   - Tuân thủ thứ tự: getByRole > getByLabel > getByPlaceholder > getByTestId > getByText > id/name > CSS > XPath.
+   - Inspect DOM thực tế trước khi chốt locator, tuyệt đối không đoán selector từ tên nhãn trong tài liệu BA.
+3. Xử lý đồng bộ & Waits:
+   - CẤM dùng page.waitForTimeout() hoặc sleep cứng.
+   - Dùng expect(locator).toBeVisible(), toHaveURL(), và page.waitForResponse() đăng ký trước thao tác click.
+4. Quản lý dữ liệu test:
+   - Sử dụng utils/dataFactory.ts để tạo dữ liệu ngẫu nhiên có tiền tố AUTO- (vd: AUTO-<MOD>-<timestamp>).
+   - Tuyệt đối không hardcode mật khẩu, email cá nhân thật, hoặc ID sản phẩm cố định (dùng biến môi trường ${VENDOR1_EMAIL}, ${V2_PRODUCT_ID}...).
+   - Đăng ký dữ liệu tạo mới vào cleanup registry để tự động xoá trong afterEach.
+5. Quy tắc chuyển đổi nhãn:
+   - TC có tag @CodeHienTai: Đánh dấu test.fixme() kèm annotation mã câu hỏi PO (Q-Vx), không ép pass khi hành vi BE/FE đang có mâu thuẫn nghiệp vụ.
+   - TC có tag @GiaLap: Chỉ assert giao diện và assert KHÔNG có request API cấm, không assert lưu DB.
+   - TC có tag @NeedDevSupport: Sử dụng test.skip() có điều kiện nếu môi trường test thiếu hỗ trợ.
+6. Chuẩn hoá tiêu đề Test Spec:
+   - Tiêu đề test phải bắt đầu bằng TC ID tương ứng:
+     test('PARSCA_SCOPE_TC_003 — V1 mở trang chi tiết sản phẩm V2 @Smoke @DataScope', async ({ ... }) => { ... })
+
+# OUTPUT FORMAT
+1. Tóm tắt phân tích & tiếp cận (2-3 câu).
+2. Danh sách file thay đổi hoặc tạo mới (Pages, Fixtures, Specs, Utils).
+3. Mã nguồn chi tiết:
+   - Code Page Object: pages/vendor/[TênTrang]Page.ts
+   - Code Test Spec: tests/vendor/[module].[feature].spec.ts
+   - Code Utilities/Fixtures (nếu bổ sung)
+4. Kết quả thực thi test: Báo cáo kết quả chạy test ít nhất 2 lần liên tiếp trong UI/Headed mode.

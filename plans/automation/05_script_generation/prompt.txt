@@ -1,0 +1,97 @@
+# ============================================================
+# BƯỚC 5: SINH MÃ AUTOMATION (Script Generation) — PARSCA Vendor
+# ============================================================
+# Workflow: /gen-script (tiếp tục)
+# Skill:    generate-playwright-script
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI đã review POM (Bước 3) và Data (Bước 4)
+# 2. AI sẽ sinh spec hoàn chỉnh
+# 3. Chạy headed → nếu fail → AI tự fix → PASS 2 lần → headless
+# ============================================================
+
+---START---
+
+POM (Bước 3) và Test Data Strategy (Bước 4) đã sẵn sàng.
+
+Hãy viết **spec Playwright** hoàn chỉnh cho các TC PARSCA trong scope.
+
+## Yêu cầu bắt buộc:
+
+### 1. Cấu trúc code
+
+- Import `test`, `expect` từ `fixtures/test.ts` (đã có pages, `apiAs(role)`, `dataFactory`, `env`, cleanup registry)
+- 1 spec / module-feature, đặt tên `tests/vendor/<mod>.<feature>.spec.ts` hoặc `tests/api/<group>.<feature>.spec.ts`
+- Title test **bắt đầu bằng TC ID**: `'PARSCA_SCOPE_TC_003 — V1 opens V2 product detail by URL'`
+- Pattern **Arrange → Act → Assert**
+
+```
+Arrange: tạo dữ liệu qua ProductsApi + dataFactory, đăng ký teardown; mở page bằng storageState đúng vai
+Act:     thao tác UI / gọi API theo TC
+Assert:  status code + thông báo nguyên văn + đồng bộ website (nếu TC yêu cầu)
+```
+
+### 2. Assertions
+
+- **BẮT BUỘC** assertion cuối mỗi test; assertion xen kẽ ở bước quan trọng
+- Mọi `expect` có message mô tả expected behavior
+- Với API: assert status **và** nội dung lỗi khi doc có ghi (VD 404 "Product not found", 403 "You do not have permission to access this resource")
+
+```typescript
+const response = await responsePromise;
+expect(response.status(), 'Other vendor product must return 404, not 403').toBe(404);
+await expect(productDetailPage.notFoundMessage, 'UI must show permission message').toBeVisible();
+```
+
+Data-driven ma trận vai (API_PERM):
+```typescript
+const matrix = [
+  { role: 'anonymous', expected: 401 },
+  { role: 'user', expected: 403 },
+  { role: 'vendor1', expected: 200 },
+  { role: 'admin', expected: 200 },
+] as const;
+for (const row of matrix) {
+  test(`API_PERM_TC_001 — GET /products/admin/all as ${row.role}`, async ({ apiAs }) => {
+    const api = await apiAs(row.role);
+    const res = await api.get('/products/admin/all');
+    expect(res.status(), `Role ${row.role}`).toBe(row.expected);
+  });
+}
+```
+
+### 3. Mapping nhãn TC
+
+- `@CodeHienTai`: assert theo **nghiệp vụ đúng** + `test.info().annotations.push({ type: 'question', description: 'Q-Vx' })`; PO chưa trả lời → `test.fixme(true, 'Waiting PO answer Q-Vx')`
+- `@GiaLap`: chỉ assert hiển thị dữ liệu mẫu + bắt `page.on('request')` để khẳng định không có request tới endpoint cấm (VD `/dashboard/stats`)
+- `@NeedDevSupport`: `test.skip(!process.env.<FLAG>, '<lý do>')`
+- `Automatable = Partial`: tự động phần ổn định, bước thủ công ghi trong annotation
+
+### 4. Smart Waits
+
+- ⛔ **TUYỆT ĐỐI** không `page.waitForTimeout()`
+- ✅ `expect(locator).toBeVisible()`, `toHaveURL()`, `toHaveCount()`, `page.waitForResponse(r => r.url().includes(...))`
+- ✅ Đăng ký `waitForResponse` **trước** hành động gây request
+
+### 5. Test Independence
+
+- Mỗi test độc lập, không phụ thuộc thứ tự; không share dữ liệu có thay đổi trạng thái
+- Test đổi role dùng `ROLE_TEST` + `UsersApi.setRole`, khôi phục role trong teardown
+- Teardown xoá sản phẩm `AUTO-*` đã đăng ký
+
+### 6. Self-fix Loop
+
+1. Chạy headed: `npx playwright test <spec> --headed --project=<project>`
+2. **PASS** → chạy lại lần 2 (`--repeat-each=2` hoặc chạy lại) → PASS → chạy headless
+3. **FAIL** → đọc error + trace → phân loại: locator / timing / data / môi trường (`/v1`) / **bug sản phẩm**
+4. Lỗi test → sửa → chạy lại; **bug sản phẩm** → KHÔNG sửa test để PASS, ghi lại bằng chứng + đề xuất `/analyze-bug`
+5. **KHÔNG hỏi user** trong self-fix, trừ khi business rule mâu thuẫn doc
+
+### 7. Báo cáo
+
+| TC ID | Spec | Kết quả lần 1 | Kết quả lần 2 | Headless | Ghi chú (fixme / skip / bug nghi ngờ) |
+|-------|------|---------------|---------------|----------|----------------------------------------|
+
+---
+
+> ⚠️ Tham khảo: `.agent/skills/generate-playwright-script/SKILL.md`, `.agent/rules/selectors.md`, `.agent/rules/test-data.md`.

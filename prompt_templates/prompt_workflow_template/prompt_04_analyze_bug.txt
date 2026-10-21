@@ -1,0 +1,19 @@
+/analyze-bug
+
+# CONTEXT
+- Hệ thống: PARSCA Marketplace (FE SPA /vendor + BE NestJS REST API)
+- Danh mục module: .agent/skills/generate-testcase/resources/module_catalog.md
+- Nguồn sự thật: docs/parsca-vendor-test-docs/
+
+# THÔNG TIN LỖI CẦN PHÂN TÍCH
+- Mô tả sự cố: [Mô tả ngắn gọn lỗi gặp phải]
+  Ví dụ: Vendor V1 xoá sản phẩm của mình nhưng hình ảnh vẫn còn lưu và truy cập được trên CDN công khai.
+- TC ID liên quan (nếu có): [Ví dụ: PARSCA_PSTAT_TC_005]
+- Bằng chứng kỹ thuật:
+  [Dán log console, HTTP request/response, hoặc thông tin URL vào đây]
+
+# NHIỆM VỤ CỦA AGENT
+1. Thu thập Fact và đối chiếu với tài liệu BA tương ứng.
+2. Triage phân loại theo 5 nhóm: Bug / Question PO (Q-Vx) / Observation (màn giả lập) / Environment / Test issue.
+3. Xác định Root cause ở tầng BE, FE, hoặc Contract.
+4. Đưa ra giải pháp khắc phục và viết Bug Report hoàn chỉnh theo mã BUG-PARSCA-<MOD>-<YYYYMMDD>-<NN>.

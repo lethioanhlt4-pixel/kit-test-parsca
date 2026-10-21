@@ -1,0 +1,2 @@
+sku,name,price,stockCount,brand,departmentId,make,model,yearStart,yearEnd
+AUTO-CSV-1101,New Brand Vehicle 20261020,31.00,3,AutoBrandCSV20261020,auto,AutoMakeCSV20261020,AutoModelCSV20261020,2018,2022

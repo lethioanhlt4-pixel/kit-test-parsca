@@ -1,0 +1,19 @@
+/analyze-log
+
+# CONTEXT
+- Hệ thống: Cơ sở dữ liệu PARSCA Marketplace (Read-only SQL / Metabase)
+- Nguồn tham chiếu: .agent/skills/analyze-metabase-log/resources/anomaly_queries.md
+
+# KỊCH BẢN BẤT THƯỜNG CẦN PHÂN TÍCH
+[Chọn 1 trong các kịch bản ANM-01 đến ANM-05 hoặc dán kết quả SQL:]
+- ANM-01: Scope Leak — Kiểm tra sản phẩm có created_by không khớp với Vendor
+- ANM-02: Mass Assignment — Kiểm tra thuộc tính lạ bị ghi lén
+- ANM-03: Duplicate SKU — Kiểm tra trùng SKU giữa các vendor khác nhau
+- ANM-04: Storefront Status Mismatch — Kiểm tra sản phẩm Draft/Archived lộ ra website
+- ANM-05: Dangling Media — Kiểm tra file ảnh mồ côi không gắn sản phẩm
+
+Kết quả truy vấn (hoặc dữ liệu log đính kèm):
+[DÁN BẢNG DỮ LIỆU HOẶC LOG VÀO ĐÂY]
+
+# YÊU CẦU ĐẦU RA
+Agent phân tích dữ liệu, đánh giá mức độ vi phạm Business Rules (BR-01 đến BR-12), chỉ ra nguyên nhân gốc rễ và đề xuất phương án xử lý lỗi cũng như kế hoạch dọn dẹp dữ liệu an toàn.

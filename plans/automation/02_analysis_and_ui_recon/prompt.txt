@@ -1,0 +1,70 @@
+# ============================================================
+# BƯỚC 2: PHÂN TÍCH & ĐIỀU TRA UI (Analysis & UI Recon) — PARSCA Vendor
+# ============================================================
+# Workflow: /gen-script (tiếp tục)
+# Skill:    generate-playwright-script + rules/selectors.md
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI AI đã xác nhận + pre-flight OK ở Bước 1
+# 2. Điền Manual Test Cases (hoặc file + bộ lọc)
+# 3. AI sẽ TỰ ĐỘNG mở browser, inspect DOM, thu thập locators + endpoint
+# 4. Review bảng locators → sang Bước 3
+# ============================================================
+
+---START---
+
+Dưới đây là **Manual Test Cases** PARSCA Vendor cần tự động hóa. Trước khi viết code, bạn **BẮT BUỘC** khảo sát locators thật trên UI (UI Recon).
+
+## Thông tin môi trường
+
+- **FE URL:** [{FE_URL}]
+- **Tài khoản:** đọc từ `.env` theo vai ghi trong Pre-Condition của TC (VENDOR1 / VENDOR2 / ADMIN / USER / ROLE_TEST) — KHÔNG in giá trị ra chat
+- **Trình duyệt:** Chromium, viewport 1920x1080
+
+## Manual Test Cases
+
+[Dán TC hoặc chỉ định file + bộ lọc. Ví dụ:
+
+File: practices/testcases/vendor/TC_PARSCA_VENDOR_05_IMPORT_CSV.md — TC Automatable = Yes, tag @Smoke
+
+PARSCA_CSV_TC_004: V1 chạy "Check file" với csv_valid_5_rows.csv
+1. Đăng nhập ${VENDOR1_EMAIL}
+2. Mở {FE_URL}/vendor/products → bấm "Import CSV"
+3. Chọn file csv_valid_5_rows.csv (SKU AUTO-CSV-0001..0005)
+4. Bấm "Check file"
+5. Verify: hiện "Validation result — nothing written yet"; Rows = 5, To create = 5; nút "Import 5 row(s)"; POST /products/import?dryRun=true trả 2xx; danh sách sản phẩm không đổi
+
+PARSCA_SCOPE_TC_003: V1 mở chi tiết sản phẩm của V2 bằng URL
+1. Đăng nhập ${VENDOR1_EMAIL}
+2. Mở {FE_URL}/vendor/products/${V2_PRODUCT_ID}
+3. Verify: "Product not found or you do not have permission to view it."; GET /products/admin/${V2_PRODUCT_ID} → 404]
+
+---
+
+## Nhiệm vụ
+
+Sử dụng **browser MCP** để:
+
+1. **Mở browser** theo thứ tự: `navigate → resize(1920x1080) → wait_for(page load) → snapshot`
+2. **Đăng nhập** đúng vai cho từng TC (tối đa 5 lần đăng nhập / phút / tài khoản)
+3. **Điều hướng** theo từng bước trong TC; với màn có dialog (Import CSV, Delete product?) — scope locator trong dialog
+4. **Thu thập locators**:
+   - Đọc Accessibility Tree; inspect `role`, accessible name, `<label>`, `aria-label`, `placeholder`, `data-testid`, `id`, `name`
+   - TUYỆT ĐỐI **không đoán** — chỉ lấy từ DOM thật
+   - Bảng dữ liệu: dùng `getByRole('row').filter({ hasText: <SKU> })` rồi tìm phần tử con
+   - Toast: ưu tiên `getByRole('status' / 'alert')`, nếu không có → `getByText(<câu nguyên văn>)`
+5. **Ưu tiên** locator theo `.agent/rules/selectors.md`:
+   `getByRole` > `getByLabel` > `getByPlaceholder` > `getByTestId` > `getByText` > id/name > CSS > XPath (XPath phải ghi lý do)
+6. **Ghi nhận Network** cho mỗi hành động chính: method, URL thực tế (có `/v1` hay không), status, response có bọc `{data, meta}` không
+7. **Trả kết quả** dưới dạng 2 bảng:
+
+| Page / Dialog | Element | Locator Type | Locator Value | Fallback Locator | Verified (count = 1) |
+|---------------|---------|--------------|---------------|------------------|----------------------|
+
+| TC ID | Hành động | Method + URL thực tế | Status | Response wrapped? |
+|-------|-----------|----------------------|--------|-------------------|
+
+> Nếu URL thực tế lệch với giả định pre-flight (VD: có / không `/v1`) → báo ngay, đề xuất cập nhật `API_PREFIX`.
+> Element nào không có lựa chọn 1–5 ổn định → ghi "Đề xuất Dev thêm data-testid".
+
+⏸️ **Dừng lại** sau khi hoàn thành 2 bảng để tôi review trước khi sang Bước 3.

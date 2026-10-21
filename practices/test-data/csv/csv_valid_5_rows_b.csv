@@ -1,0 +1,6 @@
+sku,name,price,stockCount,compareAtPrice,description,brand,departmentId
+AUTO-CSV-1001,Marine Bilge Pump,19.99,5,29.99,Auto CSV description 1001 20261020,Parsca Marine,marine
+AUTO-CSV-1002,Boat Cleat Set,29.99,6,39.99,Auto CSV description 1002 20261020,Parsca Marine,marine
+AUTO-CSV-1003,LED Trailer Light,39.99,7,49.99,Auto CSV description 1003 20261020,Parsca,auto
+AUTO-CSV-1004,Professional Bracket,49.99,8,59.99,Auto CSV description 1004 20261020,Parsca,door
+AUTO-CSV-1005,Door Hinge Kit,59.99,9,69.99,Auto CSV description 1005 20261020,Vevor,tools

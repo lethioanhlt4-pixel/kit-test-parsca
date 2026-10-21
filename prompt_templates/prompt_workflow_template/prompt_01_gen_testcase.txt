@@ -1,0 +1,19 @@
+/gen-testcase
+
+# CONTEXT
+- Hệ thống: PARSCA — Marketplace phụ tùng (Role Vendor)
+- Module: [Mã module theo catalog, ví dụ: CSV / PFORM / SCOPE / LOGIN]
+- Doc nguồn: [Đường dẫn file trong docs/parsca-vendor-test-docs/ hoặc User Story / AC]
+  Ví dụ: docs/parsca-vendor-test-docs/12-import-csv.md
+
+# MODE
+# [Chọn 1 trong 2 modes:]
+# - QUICK: Sinh nhanh test case từ nguồn yêu cầu (mặc định)
+# - FULL: Quy trình đầy đủ qua CHECKPOINT phân tích rủi ro & traceability
+Mode: [QUICK / FULL]
+
+# OUTPUT FORMAT
+- File xuất: practices/testcases/vendor/TC_PARSCA_VENDOR_[MODULE].md
+- Bảng test case 12 cột chuẩn PARSCA (khớp scripts/convert_excel/md_to_xlsx.js):
+  | TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data | Automatable | Auto Type | Tags |
+- Đầy đủ tags chuyên biệt: @Smoke, @Regression, @CriticalPath, @DataScope, @Security, @CodeHienTai, @GiaLap

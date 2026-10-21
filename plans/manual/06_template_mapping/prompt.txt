@@ -1,0 +1,80 @@
+# ============================================================
+# BƯỚC 6: CHUẨN HÓA FORMAT (Template Mapping) — PARSCA Vendor
+# ============================================================
+# Đây là prompt độc lập — copy & paste vào bất kỳ AI nào
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI đã review Test Cases ở Bước 5
+# 2. Lưu output vào practices/testcases/vendor/TC_PARSCA_VENDOR_<MOD>.md
+# 3. Convert Excel bằng scripts/convert_excel/md_to_xlsx.js
+# ============================================================
+
+---START---
+
+Đây là bước cuối cùng. Hãy **chuẩn hóa format** toàn bộ Test Cases PARSCA Vendor đã sinh ở Bước 5 vào bảng Markdown chuẩn của kit, phù hợp convert Excel hoặc import Jira / Xray / TestRail.
+
+## Bảng chuẩn (9 field + Automation Metadata):
+
+| TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data | Automatable | Auto Type | Tags |
+
+> **Giải thích Metadata:**
+> - **Automatable:** `Yes` / `Partial` / `No` (màn `@GiaLap` thường `Partial` — chỉ assert hiển thị + không có request cấm)
+> - **Auto Type:** `UI` / `API` / `E2E` / `N/A`
+> - **Tags:** `@Smoke`, `@Regression`, `@Security`, `@DataScope`, `@Boundary`, `@CodeHienTai`, `@SuyLuan`, `@GiaLap`, `@NeedDevSupport`
+
+## Quy tắc khi lập bảng:
+
+### TC ID
+- Format: `PARSCA_<MOD>_TC_<NNN>` (VD: `PARSCA_SCOPE_TC_001`, `PARSCA_CSV_TC_012`); TC API: `API_<GROUP>_TC_<NNN>`
+- `<MOD>` ∈ ROLE, LOGIN, SESS, SCOPE, PLIST, PDTL, PSTAT, PFORM, IMG, CSV, DASH, ORD, ORDD, REV, SET, PAY, PROF, WEB
+- Tăng dần liên tục, không nhảy số, không trùng với file TC khác
+
+[Tùy chỉnh: nếu cần nối tiếp file đã có, ghi số bắt đầu. VD: "PARSCA_CSV bắt đầu từ TC_021".]
+
+### Giá trị cột
+- **Module:** `M<n>: <MOD>` (VD `M4: SCOPE`)
+- **Risk Level:** `🔴 High` / `🟡 Medium` / `🟢 Low`
+- **Priority:** Critical / High / Medium / Low
+- **Pre-Condition:** tài khoản dạng biến (`${VENDOR1_EMAIL}`), dữ liệu đối chứng (`${V2_PRODUCT_ID}`, `{{V2_PRODUCT_SKU}}`)
+- **Test Data:** giá trị cụ thể theo `.agent/rules/test-data.md` — KHÔNG credentials thật
+
+### Test Steps & Expected Result
+- **PHẢI đánh số** và khớp 1-1 giữa Steps và Expected
+- Dùng `<br>` để xuống dòng trong cell
+- URL / endpoint đầy đủ: `{FE_URL}/vendor/products`, `POST {API_URL}/products/import?dryRun=true`
+- Thông báo lỗi **nguyên văn, in đậm**; API ghi rõ status code
+- Ký hiệu đặc biệt trong Expected:
+  - `⚠️ THEO CODE HIỆN TẠI: … → ghi Q-Vx, không PASS` (kèm tag `@CodeHienTai`)
+  - `[SUY LUẬN]` (kèm tag `@SuyLuan`)
+  - `📝 Ghi nhận cho BA: …` (màn `@GiaLap`, không phải bug)
+- Ví dụ trong cell:
+  ```
+  1. Đăng nhập ${VENDOR1_EMAIL}<br>2. Mở {FE_URL}/vendor/products/${V2_PRODUCT_ID}<br>3. Quan sát Network
+  ```
+- **KHÔNG** dùng ký tự `|` bên trong ô (thay bằng `/` hoặc chữ "hoặc")
+
+### Quy tắc TUYỆT ĐỐI:
+- ❌ **KHÔNG ĐƯỢC** bỏ sót hoặc rút gọn bất kỳ TC nào đã sinh ở Bước 5
+- ❌ **KHÔNG ĐƯỢC** tự ý gộp các TC khác nhau
+- ❌ **KHÔNG ĐƯỢC** ghi bug "không lưu / không gọi API" cho màn giả lập
+- ✅ **BẮT BUỘC** qua AI Self-Quality Gate: 100% unique TC ID · Steps ↔ Expected 1-1 · test data cụ thể · field validation riêng từng trường · đủ Automation Metadata · TC `@CodeHienTai` có mã Q-Vx
+- ✅ Bảng quá dài → chia **Part 1, Part 2, Part 3...** và hỏi tôi để tiếp tục
+
+---
+
+## Output & Integration
+
+Xuất kết quả dưới dạng **Artifact / file** `practices/testcases/vendor/TC_PARSCA_VENDOR_<MOD>.md` theo thứ tự section:
+1. Header info (dự án, module, doc nguồn, ngày, người tạo)
+2. TỔNG HỢP RISK LEVEL
+3. TRACEABILITY MATRIX (REQ → TC)
+4. BẢNG TEST CASES (mỗi module 1 bảng)
+5. TỔNG HỢP AMBIGUITIES (Q-Vx, Q-NEW)
+6. THỐNG KÊ (tổng TC, theo priority, theo tag, automatable, kỹ thuật thiết kế)
+
+Sau đó tôi có thể:
+- Convert Excel: `node scripts/convert_excel/md_to_xlsx.js practices/testcases/vendor/TC_PARSCA_VENDOR_<MOD>.md`
+- Export CSV import Jira / Xray / TestRail
+- Chuyển các TC `Automatable = Yes` sang `plans/automation/` hoặc `/gen-script`
+
+Nếu tổng số TC > 30, chia artifact thành nhiều phần và hỏi "Tiếp tục Part X?" trước khi sinh tiếp.

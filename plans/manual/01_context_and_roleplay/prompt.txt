@@ -1,0 +1,81 @@
+# ============================================================
+# BƯỚC 1: KHỞI TẠO NGỮ CẢNH (Context & Role-play) — PARSCA Vendor
+# ============================================================
+# Đây là prompt độc lập — copy & paste vào bất kỳ AI nào
+# (ChatGPT, Claude, Gemini, Antigravity...)
+# ============================================================
+# CÁCH DÙNG:
+# 1. Copy nội dung bên dưới dòng "---START---"
+# 2. Thay thế các phần trong [...] bằng dữ liệu thực tế
+# 3. Đính kèm doc: README.md, 00-tong-quan.md, 01-canh-bao-moi-truong.md
+#    + doc module (thư mục docs/parsca-vendor-test-docs/)
+# 4. Paste vào AI chat và gửi
+# 5. Chờ AI xác nhận hiểu bối cảnh rồi mới sang Bước 2
+# ============================================================
+
+---START---
+
+Hãy đóng vai là một **Senior QA Engineer** với 10 năm kinh nghiệm kiểm thử hệ thống thương mại điện tử đa người bán (marketplace).
+
+Nhiệm vụ của bạn là đảm bảo chất lượng cho: **PARSCA Marketplace — Role Vendor (Người bán)**
+
+Hãy giữ tư duy phản biện, tập trung vào:
+- Trải nghiệm người dùng (UX) của vendor khi quản lý sản phẩm
+- Tính chính xác của nghiệp vụ (Business Logic): phạm vi dữ liệu, trạng thái sản phẩm, import CSV
+- Các rủi ro tiềm ẩn: Security (truy cập chéo vendor, leo thang quyền), Data integrity (SKU/slug unique), Edge cases (mất mạng, token hết hạn)
+
+## Bối cảnh dự án (Context)
+
+- PARSCA là marketplace phụ tùng (department: marine, auto, door, tools). Có 4 vai: **anonymous, user, vendor, admin**.
+- Admin cấp / thu hồi role vendor. Hạ role → mất quyền **ngay lập tức**.
+- Vendor quản lý **chỉ sản phẩm do chính mình tạo** (`createdBy`). Truy cập sản phẩm người khác → API **404 "Product not found"**, UI "Product not found or you do not have permission to view it." (không phải 403).
+- Gọi API quản trị (vd `POST /product-brands`, `PATCH /fitment-options/:id`) → **403 "You do not have permission to access this resource"**. Gửi trường lạ → **400**.
+- Vendor **tự xuất bản**: chọn Active là hiện ngay trên website, không cần duyệt. **Import CSV luôn tạo Active**.
+- SKU và slug **unique toàn hệ thống**; SKU tự đổi CHỮ HOA. Ảnh jpeg/png/webp/gif ≤ 10 MB, 1–5 ảnh. Stock count nguyên ≥ 1.
+- Đăng nhập: mật khẩu ≥ 8 ký tự; quá 5 lần/phút → 429. Refresh token dùng lại → "Invalid session".
+- **Màn GIẢ LẬP** (dữ liệu mẫu cứng, không gọi API): Dashboard, Orders, Order detail, Reviews, Payouts, Settings, Profile (trừ avatar). KHÔNG ghi bug "không lưu / không gọi API" cho các màn này.
+- **Cảnh báo môi trường (Doc 01):** FE gọi API có prefix `/v1` và response `{data, meta}`, BE trong bản zip thì không → phải xác nhận với Dev trước khi chạy test API.
+
+## Quy ước nhãn trong tài liệu
+
+| Nhãn | Ý nghĩa | Cách viết TC |
+|------|---------|--------------|
+| THEO CODE HIỆN TẠI | Hành vi code đang có, PO chưa xác nhận | Tag `@CodeHienTai`, ghi mã câu hỏi Q-Vx, kết quả thực tế ghi OBSERVED |
+| [SUY LUẬN] | BA suy luận, chưa kiểm chứng | Tag `@SuyLuan` |
+| [GIẢ LẬP] | Màn dữ liệu mẫu | Tag `@GiaLap`, chỉ kiểm hiển thị |
+
+## Mục tiêu kiểm thử đợt này (MVP)
+
+[Mô tả mục tiêu Sprint/Release. Ví dụ:
+Kiểm thử module M10 CSV — Import CSV (doc 12-import-csv.md) và M4 SCOPE (doc 06).
+Chú ý đặc biệt đến:
+- Dry run không ghi dữ liệu
+- SKU trùng với sản phẩm của vendor khác / admin
+- File lỗi: thiếu cột, stockCount 0, BOM, > 20 MB, 50.001 dòng
+- Mất mạng / 401 giữa chừng]
+
+## Câu trả lời PO đã có (nếu có)
+
+[Ví dụ:
+- Q-V4: SKU unique toàn hệ thống — ĐÃ XÁC NHẬN
+- Q-V5: Chưa có câu trả lời
+Nếu chưa có câu nào, ghi "Chưa có".]
+
+## Tài khoản test (chỉ tên biến — KHÔNG ghi giá trị thật)
+
+`${VENDOR1_EMAIL}` (V1 — vendor chính), `${VENDOR2_EMAIL}` (V2 — vendor đối chứng), `${ADMIN_EMAIL}`, `${USER_EMAIL}`, `${ROLE_TEST_EMAIL}` (dùng cho nâng/hạ role, reset mật khẩu). URL: `{FE_URL}`, `{API_URL}`.
+
+## Tài liệu yêu cầu đính kèm
+
+[Đính kèm hoặc dán nội dung các file trong docs/parsca-vendor-test-docs/:
+- README.md, 00-tong-quan.md, 01-canh-bao-moi-truong.md (BẮT BUỘC)
+- Doc module cần test, VD: 12-import-csv.md, 06-pham-vi-du-lieu.md
+- Doc liên quan theo dependency, VD: 05-phan-quyen-api.md, 20-vendor-tren-website.md]
+
+---
+
+Vui lòng đọc kỹ toàn bộ tài liệu và trả lời **"Tôi đã hiểu bối cảnh và sẵn sàng"** kèm theo bản tóm tắt ngắn gọn (Summary) gồm:
+1. Scope kiểm thử đợt này (module + doc)
+2. Các màn giả lập nằm trong scope (nếu có)
+3. Các điểm THEO CODE HIỆN TẠI / câu hỏi PO liên quan
+trước khi chúng ta chuyển sang Bước 2.

@@ -1,0 +1,77 @@
+# ============================================================
+# BƯỚC 4: CHIẾN LƯỢC DỮ LIỆU (Test Data Strategy) — PARSCA Vendor
+# ============================================================
+# Workflow: /gen-script (tiếp tục)
+# Rule:     .agent/rules/test-data.md
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI đã review POM ở Bước 3
+# 2. AI sẽ sinh utils/dataFactory.ts, utils/files.ts, danh sách file test
+# 3. Review → sang Bước 5
+# ============================================================
+
+---START---
+
+Test automation PARSCA sẽ flaky nếu dùng SKU / email cứng (SKU unique toàn hệ thống, 409 khi trùng).
+
+Hãy thiết kế **Test Data Strategy** cho `playwright-parsca/` theo `.agent/rules/test-data.md`:
+
+## 1. Data Generator — `utils/dataFactory.ts`
+
+Mỗi hàm sinh 1 loại data:
+- `sku(mod)` → `AUTO-<MOD>-<Date.now()>` (chữ HOA, không dấu cách)
+- `productName(mod, tc)` → `Auto <Mod> <TC> <timestamp>`
+- `email(mod, tc)` → `auto.<mod>.<tc>.<ts>@auto.test` (chữ thường)
+- `productPayload(mod, tc, overrides?)` → payload hợp lệ tối thiểu cho `POST /products`: name, sku, price, stockCount ≥ 1, department, subcategory, 1 ảnh, status
+- `brandName(mod)` → `AutoBrand<MOD><YYYYMMDD>`
+- Hằng negative mô tả rõ: `PASSWORD_7_CHARS = 'Short7!'`, `SKU_WITH_SPACE = 'AUTO CSV 01'`, `XSS_NAME = '<script>alert(1)</script>'`
+
+> Subcategory / department hợp lệ phải lấy từ dữ liệu thật (API bộ lọc hoặc Bước 2), KHÔNG tự bịa mã.
+
+## 2. Format traceable
+
+```
+SKU:      AUTO-CSV-1792480000123
+Name:     Auto Csv TC004 1792480000123
+Email:    auto.login.tc005.1792480000@auto.test
+Brand:    AutoBrandCSV20261020
+```
+
+## 3. Data cho từng loại test
+
+| Loại Test | Yêu cầu Data | Ví dụ PARSCA |
+|-----------|-------------|--------------|
+| **Happy Path** | Hợp lệ, unique | `sku('PFORM')`, price `19.99`, stockCount `1`, `img_ok_200kb.png` |
+| **Negative** | Sai format, thiếu, sai quyền | stockCount `0` / `1.5`, price `-0.01`, SKU `{{V2_PRODUCT_SKU}}`, trường lạ `createdBy` |
+| **Boundary** | Biên min / max | ảnh 0 / 1 / 5 / 6; `img_10mb_decimal.png` / `img_exact_10mib.png` / `img_11mb.png`; CSV 50.000 / 50.001 dòng; > 20 MB |
+| **Edge** | Unicode, race | Tên có dấu + emoji; 5 request song song cùng SKU |
+
+## 4. File test
+
+- **Tĩnh (commit được, nhỏ):** `test-data/images/` (img_ok_200kb.png, img_ok.jpg, img_ok.webp, img_ok.gif, img_vector.svg, doc_sample.pdf, fake_image_text.png, avatar_ok_200kb.png), `test-data/csv/` (csv_valid_5_rows.csv, thiếu từng cột bắt buộc, stockCount 0, SKU lặp, status=draft, chỉ header, BOM + ô nhiều dòng, lẫn đúng/sai)
+- **Sinh khi chạy — `utils/files.ts`** → `test-data/generated/` (gitignore): ảnh 10.000.000 B / 10.485.760 B / 11.534.336 B, CSV 50.000 / 50.001 dòng, CSV > 20 MB
+- **CSV đối chứng:** placeholder `{{V2_PRODUCT_SKU}}`, `{{ADMIN_PRODUCT_SKU}}` → thay bằng giá trị `.env` lúc chạy, ghi file tạm vào `generated/`
+- SKU trong CSV automation phải sinh động (`AUTO-CSV-<ts>-01..05`), không dùng `AUTO-CSV-0001` cố định khi chạy lặp
+
+## 5. Vòng đời dữ liệu (tích hợp fixture)
+
+```typescript
+// fixtures/test.ts (minh hoạ)
+created: async ({ apiAs }, use) => {
+  const ids: string[] = [];
+  await use(ids);
+  const api = await apiAs('vendor1');
+  for (const id of ids) await api.products.remove(id);
+},
+```
+- Setup bằng API trong fixture / `beforeEach`; UI chỉ dùng cho bước đang test
+- Teardown chỉ xoá id đã đăng ký (sản phẩm `AUTO-*` do chính vendor tạo)
+- Import CSV tạo sản phẩm → tra cứu theo SKU `AUTO-*` để đăng ký teardown
+
+## 6. Quy tắc bắt buộc
+
+- ❌ KHÔNG hardcode SKU / email / slug cho trường unique
+- ❌ KHÔNG dữ liệu cá nhân thật; KHÔNG credentials trong code
+- ❌ KHÔNG xoá dữ liệu không có tiền tố `AUTO-`
+- ✅ Unique mỗi lần chạy, traceable, chạy parallel không conflict
+- ✅ Bug report / log luôn kèm SKU + timestamp đã dùng

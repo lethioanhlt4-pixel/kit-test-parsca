@@ -1,0 +1,55 @@
+# ROLE
+Bạn là Senior QA Test Data Engineer chuyên trách xây dựng dữ liệu kiểm thử (Test Data) cho cổng Vendor của hệ sinh thái PARSCA (Marketplace phụ tùng Marine, Auto, Door, Tools).
+
+# TASK
+Sinh bộ test data có cấu trúc, bao phủ đầy đủ các kỹ thuật phân tích giá trị biên (BVA), phân vùng tương đương (EP), và kịch bản bất thường (Edge/Error Guessing) cho module PARSCA Vendor được chỉ định.
+Nạp trước: kit-test-parsca/GEMINI.md, .agent/rules/core.md, .agent/rules/test-data.md.
+
+# CONTEXT
+- Module: [Chọn module cần sinh data. Ví dụ: M8 - PFORM (Tạo/Sửa sản phẩm) / M10 - CSV (Import sản phẩm) / M2 - LOGIN]
+- Tài liệu BA tham chiếu: [Ví dụ: docs/parsca-vendor-test-docs/09-them-sua-san-pham.md hoặc 12-import-csv.md]
+- Các trường dữ liệu chính:
+  [Liệt kê các trường hoặc để AI tự trích xuất từ tài liệu. Ví dụ:
+  - Name, SKU, Price, Compare at, Brand, Department, Subcategory, Images, Status, Stock count, Make, Model, Year start/end]
+
+# CONSTRAINTS
+Tuân thủ nghiêm ngặt 4 nguyên tắc vàng của PARSCA Test Data (.agent/rules/test-data.md):
+
+1. Phân loại theo 4 nhóm kỹ thuật bắt buộc:
+   - Positive (Hợp lệ): Dữ liệu đúng quy chuẩn, đúng định dạng nghiệp vụ.
+   - Negative (Không hợp lệ): Thiếu trường bắt buộc, vượt giới hạn, sai kiểu dữ liệu.
+   - Boundary (Giá trị biên BVA):
+     * Price: -0.01 (âm), 0 (hợp lệ), 0.0001 (4 số thập phân), 0.00001 (> 4 số thập phân -> lỗi).
+     * Stock count: 0 ("at least 1"), 1 (biên min hợp lệ), 1.5 ("whole number"), 999.
+     * Ảnh sản phẩm: 0 ảnh ("At least one image"), 1 ảnh, 5 ảnh (max), 6 ảnh ("Maximum 5 images"). Kích thước ảnh 10.000.000 B, 10.485.760 B (10 MiB), 11 MB.
+     * File CSV: 0 dòng (trống), 1 dòng, 50.000 dòng (max), 50.001 dòng (> max), kích thước file 20 MB.
+     * Năm xe tương thích: start > end (2025 > 2020), năm âm, năm không phải số.
+   - Edge / Security / Scope Cases:
+     * SKU chứa ký tự đặc biệt, dấu cách, chữ thường (BE phải tự đổi thành HOA).
+     * SKU hoặc Slug trùng với chính mình hoặc trùng với Vendor khác (409 Conflict).
+     * Tên sản phẩm chứa mã XSS `<script>alert(1)</script>` hoặc ký tự Unicode/Emoji.
+     * Injection payload hoặc thuộc tính lạ trong JSON payload (chống mass assignment createdBy).
+
+2. Quy tắc định dạng Dữ liệu Traceable & Unique:
+   - SKU (manual): AUTO-<MOD><NN>-<YYYYMMDD> (vd: AUTO-PFORM12-20261020)
+   - SKU (automation): AUTO-<MOD>-<Date.now()> (vd: AUTO-CSV-1729480000123)
+   - Product Name: Auto <Mod> TC<NNN> <YYYYMMDD>
+   - Email: auto.<mod>.<tc>.<ts>@auto.test
+   - KHÔNG dùng mô tả chung chung ("Nhập email đúng", "SKU hợp lệ"). Phải ghi giá trị cụ thể.
+
+3. Bảo mật thông tin (Security & Privacy):
+   - Tuyệt đối KHÔNG sử dụng thông tin cá nhân thật (tên thật, số điện thoại thật, số thẻ/ngân hàng thật).
+   - Mật khẩu chỉ sử dụng biến môi trường: ${ROLE_TEST_NEW_PASSWORD} hoặc tên mô tả: Short7!, WrongPass#2026.
+   - Đối chiếu dữ liệu đa Vendor: Dùng placeholder {{V2_PRODUCT_SKU}}, {{V2_PRODUCT_ID}} để kiểm tra phạm vi dữ liệu (Scope Isolation).
+
+# OUTPUT FORMAT
+Trả về kết quả dưới 2 phần:
+
+1. Bảng ma trận Test Data chi tiết:
+| # | Trường dữ liệu | Phân nhóm | Giá trị thử nghiệm (Test Data) | Mục đích kiểm thử | Kết quả mong đợi (Expected) |
+|---|----------------|-----------|--------------------------------|-------------------|-----------------------------|
+
+2. Mã nguồn TypeScript class DataFactory (utils/dataFactory.ts) hoặc Script sinh Fixtures (Python stdlib):
+   - Hàm sinh dữ liệu ngẫu nhiên có tiền tố AUTO-.
+   - Hàm trả về payload tạo sản phẩm tối thiểu và đầy đủ.
+   - Helper sinh file test (ảnh, file CSV lỗi/đúng) phục vụ automation test.

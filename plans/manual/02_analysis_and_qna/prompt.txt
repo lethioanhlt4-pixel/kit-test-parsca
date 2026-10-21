@@ -1,0 +1,71 @@
+# ============================================================
+# BƯỚC 2: PHÂN TÍCH YÊU CẦU VÀ Q&A (Analysis & QnA) — PARSCA Vendor
+# ============================================================
+# Đây là prompt độc lập — copy & paste vào bất kỳ AI nào
+# ============================================================
+# CÁCH DÙNG:
+# 1. Gửi prompt này SAU KHI AI đã xác nhận hiểu bối cảnh ở Bước 1
+# 2. Đọc các câu hỏi AI sinh ra (Q-Vx đã có + Q-NEW mới)
+# 3. Trả lời từng câu hỏi cho AI (chưa có → "Chưa xác định, giả định là ...")
+# 4. Khi đã giải đáp hết → sang Bước 3
+# ============================================================
+
+---START---
+
+Dựa trên tài liệu PARSCA Vendor và bối cảnh đã cung cấp ở Bước 1, hãy phân tích yêu cầu của các module trong scope một cách chi tiết.
+
+## Nhiệm vụ của bạn:
+
+### 1. Xác định luồng (Flows)
+
+Liệt kê đầy đủ các luồng **theo từng module**:
+- **Happy Path:** Luồng nghiệp vụ chính (VD: V1 tạo sản phẩm Active → hiện ngay trên website)
+- **Alternate Paths:** Luồng rẽ nhánh hợp lệ (VD: tạo Draft rồi đổi Active; Import CSV sau khi "Check file" dry run)
+- **Exception Paths:** Luồng ngoại lệ / lỗi (VD: 409 SKU trùng, 401 giữa chừng, 429 login, BE 5xx)
+
+[Gợi ý bổ sung — đặc biệt chú ý với PARSCA:
+- Truy cập chéo: V1 mở / sửa / xoá / đổi trạng thái sản phẩm của V2 và Admin (UI + API) → 404
+- Leo thang quyền: vendor gọi API quản trị, gửi trường lạ (createdBy, vendorName) → 403 / 400 / bị bỏ qua
+- Thay đổi role khi đang đăng nhập: admin hạ vendor → user khi vendor đang ở /vendor/products
+- Phiên: refresh token dùng lại, nhiều tab, logout ở tab khác, upload ảnh khi token hết hạn
+- Upload ảnh: sai loại (svg, heic, pdf, text đổi đuôi), ≥ 10 MB, 0 / 6 ảnh
+- Import CSV: dry run, file lỗi, SKU người khác, 50.000 / 50.001 dòng, > 20 MB, mất mạng, import lại cùng file
+- Đồng bộ website: Active / Draft / Archived / Xoá → storefront, category-counts, cache
+- Màn giả lập: chỉ kiểm hiển thị dữ liệu mẫu, không gọi API cấm]
+
+### 2. Phát hiện điểm mờ (Ambiguity Detection)
+
+Phát hiện và liệt kê các điểm:
+- **Thiếu sót:** Thông tin chưa được đề cập trong doc
+- **Mâu thuẫn:** Giữa các doc (VD: doc 09 vs doc 12 về brand mới), giữa FE và BE (VD: `/v1` — Doc 01)
+- **Chưa rõ ràng:** Yêu cầu hiểu được nhiều cách
+- **Phân loại theo nhãn doc:** THEO CODE HIỆN TẠI / [SUY LUẬN] / [GIẢ LẬP]
+
+[Gợi ý kiểm tra — doc đã quy định chưa?
+- Độ dài tối đa Name, mô tả sản phẩm, OEM part number
+- Ngưỡng 10 MB là 10.000.000 B hay 10.485.760 B
+- Subcategory không thuộc department (BE không kiểm tra)
+- Compare at < Price, Year start > Year end (BE không chặn)
+- Hành vi khi xoá sản phẩm đã có đơn hàng
+- Thời gian cache storefront sau khi đổi trạng thái
+- Thông báo lỗi chính xác (chuỗi tiếng Anh) cho từng trường]
+
+### 3. Đặt câu hỏi (Q&A)
+
+**3a. Đối chiếu câu hỏi PO đã có** — lập bảng:
+
+| Mã | Nội dung | Doc | Ảnh hưởng tới TC nào | Trạng thái (Đã trả lời / Mở) |
+|----|----------|-----|----------------------|------------------------------|
+
+Bắt buộc rà soát: Q-V2, Q-V4, Q-V5, Q-V6, Q-V8, Q-V9 (+ các mã Q-V khác xuất hiện trong doc đính kèm).
+
+**3b. Câu hỏi mới** — đánh số `Q-NEW-01`, `Q-NEW-02`... Mỗi câu cần:
+- Ngữ cảnh: doc + mục / dòng liên quan
+- Tại sao cần hỏi (rủi ro nếu hiểu sai)
+- Đề xuất giả định (assumption) nếu không được trả lời
+- TC nào sẽ phải gắn `@CodeHienTai` nếu chưa có câu trả lời
+
+---
+
+Hãy trình bày kết quả phân tích bằng **Markdown có cấu trúc rõ ràng**, nhóm theo module (mã ROLE, LOGIN, SCOPE...).
+⏸️ **SAU KHI HOÀN THÀNH**, hãy dừng lại và chờ tôi trả lời các câu hỏi trước khi sang Bước 3.

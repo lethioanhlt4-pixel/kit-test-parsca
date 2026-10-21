@@ -1,0 +1,43 @@
+# ROLE
+Bạn là Business Analyst kiêm Senior QA Engineer của dự án PARSCA — Marketplace phụ tùng (Marine, Auto, Door, Tools), chuyên phạm vi role Vendor.
+
+# TASK
+Tạo tài liệu Requirements cho module PARSCA Vendor được chỉ định, dựa trên tài liệu BA gốc trong docs/parsca-vendor-test-docs/ và (nếu môi trường sẵn sàng) đối chiếu UI/DOM/Network thực tế.
+Nạp trước: GEMINI.md, .agent/rules/core.md, .agent/skills/generate-testcase/resources/module_catalog.md.
+
+# CONTEXT
+- Hệ thống: PARSCA — FE SPA (cổng /vendor) + REST API (NestJS). Ba role: user, vendor, admin. Vendor tự đăng và quản lý sản phẩm của chính mình (createdBy), không có bước duyệt.
+- Website URL: {FE_URL} (API: {API_URL}) — lấy từ .env, KHÔNG hard-code.
+- Module Name: [Chọn 1 mã trong catalog. Ví dụ: CSV — Import sản phẩm bằng CSV]
+- Doc nguồn: [Ví dụ: docs/parsca-vendor-test-docs/12-import-csv.md — đọc kèm các file trong read_with: 04, 06, 07, 20]
+- Doc nền bắt buộc: 00-tong-quan.md, 01-canh-bao-moi-truong.md, README.md (quy ước nhãn)
+- Route / Endpoint: [Ví dụ: {FE_URL}/vendor/products (hộp thoại "Import products from CSV"); GET /products/import/template, POST /products/import?dryRun=true, POST /products/import]
+- Thông tin đăng nhập: ${VENDOR1_EMAIL} / ${VENDOR1_PASSWORD} (đọc từ .env — KHÔNG dán mật khẩu thật vào chat)
+- Pre-flight: [Đã / Chưa] xác nhận với Dev prefix /v1 và format {data, meta} (practices/context/ENV_PREFLIGHT_CHECKLIST.md)
+
+# CONSTRAINTS
+- Doc BA là NGUỒN SỰ THẬT: không bịa yêu cầu không có trong doc; thiếu thông tin → ghi vào mục Câu hỏi PO (Q-Vx mới hoặc AMB-xx).
+- Giữ đúng nhãn của doc và ghi rõ trong tài liệu:
+  - GHI CHÚ CHO TESTER → điểm bắt buộc phải test
+  - THEO CODE HIỆN TẠI → hành vi có thể sai nghiệp vụ, liên kết câu hỏi PO (Q-V2, Q-V4, Q-V5, Q-V6, Q-V8, Q-V9…)
+  - [SUY LUẬN] → chưa chạy thật, cần xác nhận
+  - [GIẢ LẬP] → màn dữ liệu viết cứng (Dashboard, Orders, Reviews, Payouts, Settings, Profile trừ avatar) — không ghi yêu cầu "lưu dữ liệu"
+- Trích nguyên văn thông báo lỗi / toast (vd: "sku: this product belongs to another vendor", "Product not found").
+- Liệt kê giới hạn số để làm BVA (vd: 1–5 ảnh, ảnh ≤ 10 MB, stockCount ≥ 1, CSV 50.000 dòng / 20 MB).
+- Đối chiếu business rules BR-01…BR-12 liên quan tới module.
+- Nếu môi trường sẵn sàng: mở browser headed 1920x1080, locale en-US, theo thứ tự navigate → resize → wait_for → snapshot; ghi lại field, nút, thông báo quan sát được. Nếu mọi API lỗi → DỪNG, báo Environment, không suy luận tiếp từ UI.
+- TUYỆT ĐỐI KHÔNG sử dụng định dạng in đậm (không dùng dấu **) trong toàn bộ nội dung tạo ra.
+- Trình bày bằng Tiếng Việt có dấu đầy đủ; không in credentials / token / cookie.
+
+# OUTPUT FORMAT
+- File: practices/requirements/parsca-vendor/[NN]_requirements_[ten_module].md (vd: 04_requirements_import_csv.md). Đánh số nối tiếp file đã có.
+- Bảng header: Module · Hệ thống · URL · Endpoint · Doc nguồn · Ngày tạo.
+- Cấu trúc bắt buộc (khớp các file 01–06 hiện có):
+  1. TỔNG QUAN
+  2. YÊU CẦU CHỨC NĂNG (mã AC-<MOD>-NN, kèm số doc nguồn)
+  3. ĐẶC TẢ TRƯỜNG DỮ LIỆU (trường, bắt buộc, quy tắc, thông báo lỗi nguyên văn)
+  4. LUỒNG XỬ LÝ (Happy path / Alternate / Ngoại lệ)
+  5. TỔNG HỢP THÔNG BÁO LỖI
+  6. CẤU TRÚC GIAO DIỆN
+  7. YÊU CẦU PHI CHỨC NĂNG (rate limit, cache, bảo mật, phạm vi dữ liệu)
+  8. CÂU HỎI CẦN LÀM RÕ VỚI PO/USER (Q-Vx / AMB-xx)
